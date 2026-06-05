@@ -85,7 +85,7 @@ fig1, fig2 = plot_from_cache(results, save_dir=None)
 ---
 
 ## Sample output
-
+![Example spectral fit](example_pipeline.png)
 The pipeline produces two diagnostic figures per source:
 
 **Figure 1** — χ²(z) curves and redshift posterior p(z) for all six model families
@@ -114,6 +114,6 @@ Nlowie et al. (in prep.) — Optical Spectroscopic Analysis of Fermi Detected Bl
 
 ## Contact
 
-Mohammed Nlowie Iddrisu  
+Mohammed Iddrisu Nlowie; Prof. James Aird, Dr. Eli Kasai  
 University of Edinburgh / Royal Observatory of Edinburgh  
 Funded by the Development in Africa with Radio Astronomy (DARA) programme
