@@ -98,7 +98,7 @@ The pipeline produces two diagnostic figures per source:
 
 - **Spectra**: SDSS-V DR20 BOSS spectroscopy (not yet public — available upon DR20 public release)
 - **Cache**: Pre-computed fitting results available on Zenodo (DOI above)
-- **VAC table**: `fermi_blazar_vac_dr20.fits` — available on Zenodo
+- **VAC table**: `fermi_blazar_vac_dr20.fits` — available on Zenodo or something else -- still thinking ):
 
 ---
 
