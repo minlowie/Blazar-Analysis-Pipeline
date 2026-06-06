@@ -361,6 +361,33 @@ def make_zoom_inset(ax, spec, fit_data, best_label, comp,
 
 # ── Main plot function ────────────────────────────────────────────────────────
 
+#Redshift posterior normalizer
+def normalize_shape(p):
+    """Normalise an array to its peak value for shape comparison plots."""
+    return p / np.max(p) if np.max(p) > 0 else p
+
+#Redshift peaks/ Alternative redshift solution finder
+def get_redshift_peaks(pz_total, z_grid, min_height=0.05):
+    """
+    Find the top redshift solutions from the global posterior.
+    """
+    from scipy.signal import find_peaks
+
+    p_norm      = pz_total / np.max(pz_total)
+    peak_idx, _ = find_peaks(p_norm, height=min_height, distance=2,
+                              prominence=0.03)
+
+    if len(peak_idx) == 0:
+        # Fall back to just the MAP
+        peak_idx = [np.argmax(p_norm)]
+
+    peaks = sorted(
+        [(z_grid[idx], float(p_norm[idx])) for idx in peak_idx],
+        key=lambda x: x[1], reverse=True
+    )
+    return peaks
+
+#Plot from cache 
 def plot_from_cache(results, save_dir=None,
                     show_fig1=True,
                     show_fig2=True,
@@ -373,50 +400,34 @@ def plot_from_cache(results, save_dir=None,
                     wavelength_range=(3600, 10400),
                     ylim=None):
     """
-    Load cached results and produce all diagnostic plots for one source.
+    Load cached results and produce diagnostic plots for one source.
 
     Parameters
     ----------
     results              : dict — output of RedshiftResultsCache.load_object_results()
-    save_dir             : str or None — if provided, saves the spectral plot as a PDF
-    show_fig1            : bool — show chi2(z) and p(z) diagnostic figure (default True)
+    save_dir             : str or None — saves spectral plot as PDF if provided
+    show_fig1            : bool — show chi2(z) and p(z) figure (default True)
     show_fig2            : bool — show best-fit spectrum figure (default True)
-    show_inset           : bool — show zoom inset panels for detected lines (default True)
-    show_residuals       : bool — show normalised residuals panel below spectrum (default True)
-    show_components      : bool — show shaded component fills (host/jet) (default True)
-    show_line_markers    : bool — show emission/absorption line markers (default True)
+    show_inset           : bool — show zoom insets for detected lines (default True)
+    show_residuals       : bool — show normalised residuals panel (default True)
+    show_components      : bool — show shaded component fills (default True)
+    show_line_markers    : bool — show spectral line markers (default True)
     show_fraction_label  : bool — show Host/Jet fraction text box (default True)
-    models_to_show       : str or list — which model curves to overlay on the spectrum.
-                           'best' (default) shows only the best-fit model,
-                           'all' shows all fitted models,
-                           or pass a list e.g. ['Powerlaw+Galaxy', 'Galaxy']
-    wavelength_range     : tuple — (wave_min, wave_max) in Angstrom (default (3600, 10400))
-    ylim                 : tuple or None — (y_min, y_max) to override automatic y-limits.
-                           If None, limits are set automatically from flux percentiles.
+    models_to_show       : 'best', 'all', or list of model name strings
+    wavelength_range     : tuple (wave_min, wave_max) in Angstrom
+    ylim                 : tuple (y_min, y_max) or None for automatic limits
 
     Returns
     -------
-    fig, fig2 : matplotlib Figure objects (fig is None if show_fig1=False,
-                fig2 is None if show_fig2=False)
+    fig, fig2 : matplotlib Figure objects (None if show_fig1/show_fig2 is False)
 
     Examples
     --------
-    # Default — all panels, best model only
     fig1, fig2 = plot_from_cache(results)
-
-    # Only the spectrum, no chi2 figure, no insets
-    fig1, fig2 = plot_from_cache(results, show_fig1=False, show_inset=False)
-
-    # Show all models overlaid
+    fig1, fig2 = plot_from_cache(results, show_fig1=False)
     fig1, fig2 = plot_from_cache(results, models_to_show='all')
-
-    # Custom wavelength range and y-limits
-    fig1, fig2 = plot_from_cache(results, wavelength_range=(4000, 7000),
-                                  ylim=(-2, 20))
-
-    # Minimal clean plot — best model, no markers, no insets, no residuals
-    fig1, fig2 = plot_from_cache(results, show_fig1=False, show_inset=False,
-                                  show_line_markers=False, show_residuals=False)
+    fig1, fig2 = plot_from_cache(results, wavelength_range=(4000, 7000))
+    fig1, fig2 = plot_from_cache(results, ylim=(-2, 30))
     """
     meta   = results['metadata']
     spec   = results['spectrum']
@@ -453,9 +464,7 @@ def plot_from_cache(results, save_dir=None,
     wave_min, wave_max = wavelength_range
 
     # ── Figure 1: χ²(z) and p(z) ─────────────────────────────────────────────
-    fig = None
-    if show_fig1:
-     fig = plt.figure(figsize=(16, 12))
+    fig = plt.figure(figsize=(16, 12))
     gs  = GridSpec(4, 3, height_ratios=[1.6, 1.6, 1.1, 1.8],
                    hspace=0.7, wspace=0.45,
                    left=0.07, right=0.97, top=0.95, bottom=0.05)
@@ -562,17 +571,15 @@ def plot_from_cache(results, save_dir=None,
     ax_chi.legend(ncol=3, fontsize=6)
 
     plt.tight_layout()
-    plt.show()
-    plt.close(fig)
+    if show_fig1:
+        plt.show()
+    else:
+        plt.close(fig)
+        fig = None
 
     # ── Figure 2: Best-fit spectrum ───────────────────────────────────────────
-    fig2 = None
     if not show_fig2:
-        return fig, fig2
-
-    # Determine figure height based on show_residuals
-    height_ratios = [4, 1] if show_residuals else [1]
-    n_rows        = 2      if show_residuals else 1
+        return fig, None
 
     if show_residuals:
         fig2, axs2 = plt.subplots(2, 1, figsize=(14, 7), sharex=True,
@@ -598,15 +605,13 @@ def plot_from_cache(results, save_dir=None,
         ('fit_galpl',  'r',      3.0, {},           'Powerlaw+Galaxy'),
     ]
     for key, color, lw, kwargs, label in fit_curves:
-        # Filter by models_to_show
-        short_label = label.replace(' Fit', '').replace(' ', '+') if ' Fit' in label else label
         if models_to_show == 'best':
-            if not best_label.startswith(short_label) and label != best_label + ' Fit' and short_label not in best_label:
-                continue
+            if not best_label.startswith(label.replace(' Fit', '').replace('Galaxy Fit','Galaxy').replace('QSO Fit','QSO').replace('Powerlaw Fit','Powerlaw')):
+                if label.replace(' Fit','') != best_label:
+                    continue
         elif isinstance(models_to_show, list):
-            if label not in models_to_show and short_label not in models_to_show:
+            if label not in models_to_show and label.replace(' Fit','') not in models_to_show:
                 continue
-        # models_to_show == 'all' → show everything
         fd = fit_data.get(key)
         if fd is not None and fd.get('best_fit') is not None:
             axs2[0].plot(x_fit, fd['best_fit'], color=color, lw=lw,
@@ -631,12 +636,12 @@ def plot_from_cache(results, save_dir=None,
         axs2[0].set_ylim(y_lo - y_pad, y_hi + y_pad)
     axs2[0].set_xlim(wave_min, wave_max)
 
-    # EW computation — always needed for inset detection logic
+    # EW computation — needed for inset detection logic
     results_ew = compute_EW_for_all_lines(
         common_wave, flux_resamp, err_resamp, fit_mask, z_best)
     for name, obs, ew, ew_err, snr, detected, ltype, window in results_ew:
         if detected:
-            print(f"  {name:15s}: EW = {ew:6.2f} ± {ew_err:5.2f} Å, "
+            print(f"  {name:15s}: EW = {ew:6.2f} +/- {ew_err:5.2f} A, "
                   f"SNR = {snr:4.1f}")
     if show_line_markers:
         add_line_markers_to_plot(axs2[0], z_best,
@@ -665,7 +670,8 @@ def plot_from_cache(results, save_dir=None,
                               color='orange', alpha=0.40, label='Jet contrib.')
         frac_qso = comp['qsopl_contrib']['frac_tpl']
         frac_jet = comp['qsopl_contrib']['frac_pl']
-        axs2[0].text(0.02, 0.98,
+        if show_fraction_label:
+         axs2[0].text(0.02, 0.98,
                      f"Disk/BLR: {frac_qso*100:.1f}%\nJet: {frac_jet*100:.1f}%",
                      transform=axs2[0].transAxes, va='top', fontsize=12,
                      weight='bold',
@@ -679,7 +685,8 @@ def plot_from_cache(results, save_dir=None,
                               color='orange', alpha=0.40, label='Jet contrib.')
         frac_line = comp['linepl_contrib']['frac_tpl']
         frac_jet  = comp['linepl_contrib']['frac_pl']
-        axs2[0].text(0.02, 0.98,
+        if show_fraction_label:
+         axs2[0].text(0.02, 0.98,
                      f"Disk/BLR: {frac_line*100:.1f}%\nJet: {frac_jet*100:.1f}%",
                      transform=axs2[0].transAxes, va='top', fontsize=12,
                      weight='bold',
@@ -688,9 +695,7 @@ def plot_from_cache(results, save_dir=None,
 
     # Zoom insets — only for detected lines when show_inset=True
     if show_inset:
-        cak_obs = 3933.7 * (1 + z_best)
         cah_obs = 3967.5 * (1 + z_best)
-
         for name, obs_wave, ew, ew_err, snr, detected, ltype, window in results_ew:
             if not detected:
                 continue
@@ -749,7 +754,7 @@ def plot_from_cache(results, save_dir=None,
     axs2[0].grid(alpha=0.3)
 
     # Residuals
-    if show_residuals:
+    if show_residuals and len(axs2) > 1:
         if best_params is not None and best_params['best_fit'] is not None:
             resi = (spec['y_fit'] - best_params['best_fit']) / spec['e_fit']
             axs2[1].plot(x_fit, resi, color='purple', lw=1,
