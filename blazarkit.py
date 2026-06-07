@@ -39,7 +39,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-# ── Line lists (rest-frame wavelengths in Å) ─────────────────────────────────
+# ----- Line lists (rest-frame wavelengths in Angstrongs) ---------------------
 
 EMISSION_LINES = {
     'Ly_alpha': 1215,
@@ -64,7 +64,7 @@ ABSORPTION_LINES = {
 }
 
 
-# ── Cache system ──────────────────────────────────────────────────────────────
+# ------ Cache system ---------------------------------------------------------------
 
 class RedshiftResultsCache:
     """
@@ -115,7 +115,7 @@ class RedshiftResultsCache:
         return files
 
 
-# ── Line marking ─────────────────────────────────────────────────────────────
+# ---- Line marking ----------------------------------------------------------
 
 def mark_spectral_lines(ax, z, obs_range=(3600, 10400)):
     """Mark emission and absorption lines at redshift z on axes ax."""
@@ -157,7 +157,7 @@ def add_line_markers_to_plot(ax, z_fit, x_range=None):
     ax.legend(handles, labels, fontsize=9, loc='upper right')
 
 
-# ── EW measurement ────────────────────────────────────────────────────────────
+# -- EW measurement -------------------------------------------------------------
 
 def measure_equivalent_width_hybrid_normalized(
         wave, flux, err, fit_mask, line_center,
@@ -251,7 +251,7 @@ def compute_EW_for_all_lines(wave, flux, err, fit_mask, z):
     return results_ew
 
 
-# ── Zoom inset ────────────────────────────────────────────────────────────────
+# ---- Zoom inset -----------------------------------------------------------------
 
 def make_zoom_inset(ax, spec, fit_data, best_label, comp,
                     center_waves, zoom_width, loc, line_labels,
@@ -359,7 +359,7 @@ def make_zoom_inset(ax, spec, fit_data, best_label, comp,
     return ax_inset
 
 
-# ── Main plot function ────────────────────────────────────────────────────────
+# ---- Main plot function -------------------------------------------------
 
 #Redshift posterior normalizer
 def normalize_shape(p):
@@ -463,7 +463,7 @@ def plot_from_cache(results, save_dir=None,
 
     wave_min, wave_max = wavelength_range
 
-    # ── Figure 1: χ²(z) and p(z) ─────────────────────────────────────────────
+    # ------- Figure 1: chi squared (z) and p(z) ---------------------------------
     fig = plt.figure(figsize=(16, 12))
     gs  = GridSpec(4, 3, height_ratios=[1.6, 1.6, 1.1, 1.8],
                    hspace=0.7, wspace=0.45,
@@ -577,7 +577,7 @@ def plot_from_cache(results, save_dir=None,
         plt.close(fig)
         fig = None
 
-    # ── Figure 2: Best-fit spectrum ───────────────────────────────────────────
+    # ---- Figure 2: Best-fit spectrum --------------------------------------
     if not show_fig2:
         return fig, None
 
@@ -790,7 +790,7 @@ def plot_from_cache(results, save_dir=None,
     return fig, fig2
 
 
-# ── Multi-object comparison plot ──────────────────────────────────────────────
+# --- Multi-object comparison plot ----------------------------------------
 
 def plot_multi_object_comparison_single(object_list, cache, final_bl,
                                         n_cols=2, save_dir="paper_plots"):
