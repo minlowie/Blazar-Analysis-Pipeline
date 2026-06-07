@@ -1,9 +1,9 @@
 """
 blazarkit.py
 ============
-Plotting and analysis utilities for the Fermi/SDSS-V Blazar Analysis Pipeline.
+Analysis utilities and plotting for the Fermi/SDSS-V Blazar Analysis Pipeline.
 
-Loads pre-computed spectral fitting results from the cache and reproduces
+It loads the pre-computed spectral fitting results from the cache and reproduces
 all diagnostic plots without re-running the fitting pipeline.
 
 Usage
@@ -23,7 +23,7 @@ Requirements
 Reference
 ---------
     Nlowie et al. (in prep.)
-    Cache data available at: <Zenodo DOI — to be added upon publication>
+    Cache data will be available at: <Zenodo DOI — to be added upon publication>
 """
 
 import os
