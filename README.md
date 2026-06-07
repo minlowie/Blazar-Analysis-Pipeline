@@ -105,7 +105,7 @@ fig1, fig2 = plot_from_cache(results)
 
 ## Sample output
 
-![Example spectral fit](example_pipeline.png)
+![Example spectral fit](example.png)
 
 **Figure description:** Multi-component optical spectral decomposition of a Fermi-detected blazar. The Powerlaw+Galaxy model (red) separates the jet contribution (orange shading) from the host galaxy (green shading). The zoom inset identifies Ca II H&K absorption features used to anchor the redshift solution. The lower panel shows normalised residuals.
 
