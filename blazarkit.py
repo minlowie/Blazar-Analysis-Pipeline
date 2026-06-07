@@ -724,7 +724,7 @@ def plot_from_cache(results, save_dir=None,
                     connector_color='dodgerblue', loc1=2, loc2=4,
                     show_residual_highlight=False, show_total_fit=False,
                     show_connector=False, ylim_percentiles=(5, 99))
-            elif name == 'H_alpha':
+            elif name == 'H_alpha': 
                 make_zoom_inset(
                     ax=axs2[0], spec=spec, fit_data=fit_data,
                     best_label=best_label, comp=comp,
