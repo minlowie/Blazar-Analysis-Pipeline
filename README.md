@@ -6,9 +6,9 @@
 
 ---
 
-## What is this?
+## What is a blazar?
 
-Blazars are a class of Active Galactic Nuclei (AGN) — supermassive black holes at the centres of galaxies — with relativistic jets of plasma pointed directly toward Earth. They are among the most energetic objects in the Universe and are detected across the full electromagnetic spectrum from radio to gamma rays.
+Blazars are a subclass of radio loud Active Galactic Nuclei (AGN) with relativistic jets of pointed directly toward Earth. They are among the most energetic objects in the Universe and are detected across the full electromagnetic spectrum from radio to gamma rays.
 
 The SDSS automated spectroscopic pipeline systematically misclassifies blazars as stars because it has no model for the non-thermal jet emission. This pipeline corrects that by decomposing each optical spectrum into physically motivated components:
 
@@ -28,10 +28,10 @@ The SDSS automated spectroscopic pipeline systematically misclassifies blazars a
 ## What you get
 
 - **Spectral decomposition plots** — observed spectrum with best-fit model, jet/host component shading, line markers, and zoom insets on key spectral features
-- **Redshift posterior plots** — χ²(z) curves and p(z) for all six model families
+- **Redshift posterior plots** — chi-squared (z) curves and p(z) for all six model families
 - **Equivalent width measurements** — for 16 emission and absorption features
 - **Raw fit parameters** — redshift, jet fraction, power-law slope, AICc margin, and more
-- **Classification summary** — one-line human-readable description of each source
+- **Classification summary** — one-line description of each source
 - **Epoch comparison** — overlay spectra from multiple observations to detect variability
 - **Population plots** — jet fraction vs redshift, PL slope distributions, and more
 - **EW summary** — bar chart of all detected spectral lines with S/N labels
@@ -236,7 +236,7 @@ Returns a list of `(z, relative_height)` tuples for all peaks in the global p(z)
 summary = classification_summary(results)
 ```
 
-Prints and returns a one-line human-readable classification of a source — blazar class, jet fraction, S/N, and key detected spectral lines.
+Prints and returns a one-line description of the classification of a source — blazar class, jet fraction, S/N, and key detected spectral lines.
 
 ---
 

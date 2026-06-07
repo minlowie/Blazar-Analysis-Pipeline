@@ -39,7 +39,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-# -- Line lists (rest-frame wavelengths in Angstrong) --------------------------
+# ── Line lists (rest-frame wavelengths in Å) ─────────────────────────────────
 
 EMISSION_LINES = {
     'Ly_alpha': 1215,
@@ -64,7 +64,7 @@ ABSORPTION_LINES = {
 }
 
 
-#---- Cache system ----------------------------------------------------------
+# ── Cache system ──────────────────────────────────────────────────────────────
 
 class RedshiftResultsCache:
     """
@@ -115,7 +115,7 @@ class RedshiftResultsCache:
         return files
 
 
-# -- Line marking ----------------------------------------------------------
+# ── Line marking ─────────────────────────────────────────────────────────────
 
 def mark_spectral_lines(ax, z, obs_range=(3600, 10400)):
     """Mark emission and absorption lines at redshift z on axes ax."""
@@ -157,7 +157,7 @@ def add_line_markers_to_plot(ax, z_fit, x_range=None):
     ax.legend(handles, labels, fontsize=9, loc='upper right')
 
 
-# -- EW measurement ----------------------------------------------------------
+# ── EW measurement ────────────────────────────────────────────────────────────
 
 def measure_equivalent_width_hybrid_normalized(
         wave, flux, err, fit_mask, line_center,
@@ -251,7 +251,7 @@ def compute_EW_for_all_lines(wave, flux, err, fit_mask, z):
     return results_ew
 
 
-# -- Zoom inset --------------------------------------------------------------
+# ── Zoom inset ────────────────────────────────────────────────────────────────
 
 def make_zoom_inset(ax, spec, fit_data, best_label, comp,
                     center_waves, zoom_width, loc, line_labels,
@@ -260,6 +260,7 @@ def make_zoom_inset(ax, spec, fit_data, best_label, comp,
                     connector_color='red', borderpad=1.5,
                     loc1=1, loc2=3, force_model=None,
                     show_residual_highlight=False,
+                    show_ew_window=False, ew_window=None,
                     show_total_fit=True, show_connector=True,
                     ylim_percentiles=(2, 98), line_colors=None):
     """Create a zoom-in inset panel highlighting a spectral feature."""
@@ -345,6 +346,19 @@ def make_zoom_inset(ax, spec, fit_data, best_label, comp,
                       bbox=dict(boxstyle='round', facecolor='white',
                                 alpha=0.9, edgecolor=color, linewidth=1.2))
 
+    if show_ew_window and ew_window is not None:
+        line_center = center_waves[0]
+        ax_inset.axvspan(line_center - ew_window,
+                         line_center + ew_window,
+                         color='gold', alpha=0.3)
+        ax_inset.text(line_center,
+                      y_lim[0] + 0.05 * (y_lim[1] - y_lim[0]),
+                      f'+/-{ew_window} A',
+                      fontsize=7, ha='center', va='bottom',
+                      color='goldenrod', fontweight='bold',
+                      bbox=dict(boxstyle='round', facecolor='white',
+                                alpha=0.8, edgecolor='gold', linewidth=1))
+
     ax_inset.set_xlim(zoom_min, zoom_max)
     ax_inset.tick_params(labelsize=7, direction='in')
     ax_inset.grid(alpha=0.3, linestyle='--', linewidth=0.5)
@@ -359,7 +373,44 @@ def make_zoom_inset(ax, spec, fit_data, best_label, comp,
     return ax_inset
 
 
-# --- Main plot function -----------------------------------------------------
+# ── Module-level utility functions ───────────────────────────────────────────
+
+def normalize_shape(p):
+    """Normalise an array to its peak value for shape comparison plots."""
+    return p / np.max(p) if np.max(p) > 0 else p
+
+
+def get_redshift_peaks(pz_total, z_grid, min_height=0.05):
+    """
+    Find the top redshift solutions from the global posterior.
+
+    Parameters
+    ----------
+    pz_total   : array — global p(z) posterior
+    z_grid     : array — redshift grid
+    min_height : float — minimum normalised height to report a peak (default 0.05)
+
+    Returns
+    -------
+    peaks : list of (z, relative_height) tuples sorted by height descending
+    """
+    from scipy.signal import find_peaks
+
+    p_norm      = pz_total / np.max(pz_total)
+    peak_idx, _ = find_peaks(p_norm, height=min_height, distance=2,
+                              prominence=0.03)
+
+    if len(peak_idx) == 0:
+        peak_idx = [np.argmax(p_norm)]
+
+    peaks = sorted(
+        [(z_grid[idx], float(p_norm[idx])) for idx in peak_idx],
+        key=lambda x: x[1], reverse=True
+    )
+    return peaks
+
+
+# ── Main plot function ────────────────────────────────────────────────────────
 
 def plot_from_cache(results, save_dir=None,
                     show_fig1=True,
@@ -436,7 +487,7 @@ def plot_from_cache(results, save_dir=None,
 
     wave_min, wave_max = wavelength_range
 
-    # ---- Figure 1: χ²(z) and p(z) -------------------------------------------
+    # ── Figure 1: χ²(z) and p(z) ─────────────────────────────────────────────
     fig = plt.figure(figsize=(16, 12))
     gs  = GridSpec(4, 3, height_ratios=[1.6, 1.6, 1.1, 1.8],
                    hspace=0.7, wspace=0.45,
@@ -550,7 +601,7 @@ def plot_from_cache(results, save_dir=None,
         plt.close(fig)
         fig = None
 
-    # --- Figure 2: Best-fit spectrum -----------------------------------------
+    # ── Figure 2: Best-fit spectrum ───────────────────────────────────────────
     if not show_fig2:
         return fig, None
 
@@ -764,7 +815,7 @@ def plot_from_cache(results, save_dir=None,
     return fig, fig2
 
 
-# --- Multi-object comparison plot -------------------------------------------
+# ── Multi-object comparison plot ──────────────────────────────────────────────
 
 def plot_multi_object_comparison_single(object_list, cache, final_bl,
                                         n_cols=2, save_dir="paper_plots"):
@@ -1078,7 +1129,7 @@ def plot_multi_object_comparison_single(object_list, cache, final_bl,
     return fig
 
 
-# --- New utility functions -----------------------------------------------
+# ── New utility functions ─────────────────────────────────────────────────────
 
 def classification_summary(results):
     """
