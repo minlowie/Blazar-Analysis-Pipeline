@@ -31,6 +31,10 @@ The SDSS automated spectroscopic pipeline systematically misclassifies blazars a
 - **Redshift posterior plots** — χ²(z) curves and p(z) for all six model families
 - **Equivalent width measurements** — for 16 emission and absorption features
 - **Raw fit parameters** — redshift, jet fraction, power-law slope, AICc margin, and more
+- **Classification summary** — one-line human-readable description of each source
+- **Epoch comparison** — overlay spectra from multiple observations to detect variability
+- **Population plots** — jet fraction vs redshift, PL slope distributions, and more
+- **EW summary** — bar chart of all detected spectral lines with S/N labels
 
 ---
 
@@ -223,6 +227,85 @@ peaks = get_redshift_peaks(pz_total, z_grid, min_height=0.05)
 
 Returns a list of `(z, relative_height)` tuples for all peaks in the global p(z) posterior, sorted by height descending.
 
+
+---
+
+### `classification_summary`
+
+```python
+summary = classification_summary(results)
+```
+
+Prints and returns a one-line human-readable classification of a source — blazar class, jet fraction, S/N, and key detected spectral lines.
+
+---
+
+### `plot_ew_summary`
+
+```python
+fig = plot_ew_summary(results, min_snr=3.0, save_dir=None)
+```
+
+Bar chart of all detected equivalent width measurements. Blue = emission, green = absorption. The |EW| = 5 Å BL Lac/FSRQ boundary is marked. S/N values are labelled on each bar.
+
+---
+
+### `compare_epochs`
+
+```python
+fig = compare_epochs(sdss_id, mjd_list, cache,
+                     wavelength_range=(3600, 10400),
+                     show_model=True,
+                     save_dir=None)
+```
+
+Overlays spectra from multiple observations of the same source, coloured from dark (earliest) to bright (latest MJD). The lower panel shows the flux ratio relative to the first epoch. Useful for identifying changing-look blazar candidates.
+
+| Parameter | Description |
+|-----------|-------------|
+| `sdss_id` | SDSS_ID of the source |
+| `mjd_list` | List of MJD integers to compare |
+| `cache` | RedshiftResultsCache instance |
+| `wavelength_range` | Wavelength range in Å |
+| `show_model` | Overlay best-fit model per epoch |
+| `save_dir` | Save as PDF if provided |
+
+---
+
+### `plot_population`
+
+```python
+fig = plot_population(results_list,
+                      x_param='z_best',
+                      y_param='jet_frac',
+                      color_by='best_label',
+                      save_dir=None)
+```
+
+Population-level scatter plot and distribution from a list of cached results.
+
+| Parameter | Options |
+|-----------|---------|
+| `x_param` | `'z_best'`, `'pl_alpha'`, `'pl_delta'`, `'aicc_margin'`, `'sn'`, `'jet_frac'` |
+| `y_param` | Same as x_param |
+| `color_by` | `'best_label'` (model family) or `'fermi_class'` |
+
+**Example:**
+```python
+# Load all sources into a list first
+results_list = []
+for fname in sorted(cache.list_cached_objects()):
+    parts   = fname.replace('.pkl.gz', '').split('_')
+    results_list.append(cache.load_object_results(parts[1], mjd=int(parts[2])))
+
+# Jet fraction vs redshift
+fig = plot_population(results_list, x_param='z_best', y_param='jet_frac')
+
+# PL alpha vs jet fraction coloured by Fermi class
+fig = plot_population(results_list, x_param='pl_alpha', y_param='jet_frac',
+                      color_by='fermi_class')
+```
+
 ---
 
 ## Cache structure
@@ -290,6 +373,10 @@ Nlowie et al. (in prep.) — Optical Spectroscopic Analysis of Fermi Detected Bl
 
 ## Contact
 
-Mohammed Nlowie Iddrisu(m.i.nlowie@sms.ed.ac.uk)|Prof. James Aird (james.aird@ed.ac.uk)| Dr. Eli Kasai (ekasai@unam.na)
-University of Edinburgh / Royal Observatory of Edinburgh|University of Edinburgh| University of Namibia
-Funded by the Development in Africa with Radio Astronomy (DARA) programme
+| Name | Institution | Email |
+|------|-------------|-------|
+| Mohammed Nlowie Iddrisu (Lead) | University of Edinburgh / Royal Observatory of Edinburgh | m.i.nlowie@sms.ed.ac.uk |
+| Prof. James Aird (Supervisor) | University of Edinburgh | james.aird@ed.ac.uk |
+| Dr. Eli Kasai (Supervisor) | University of Namibia | ekasai@unam.na |
+
+Funded by the **Development in Africa with Radio Astronomy (DARA)** programme.
