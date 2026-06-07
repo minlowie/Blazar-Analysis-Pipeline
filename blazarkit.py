@@ -712,7 +712,7 @@ def plot_from_cache(results, save_dir=None,
         for name, obs_wave, ew, ew_err, snr, detected, ltype, window in results_ew:
             if not detected:
                 continue
-            if name == 'Ca II K':
+            if name == 'Ca II K' and snr >= 5:
                 make_zoom_inset(
                     ax=axs2[0], spec=spec, fit_data=fit_data,
                     best_label=best_label, comp=comp,
@@ -722,8 +722,7 @@ def plot_from_cache(results, save_dir=None,
                                  (cah_obs,  'Ca II H', 'forestgreen')],
                     x_fit=x_fit, flux_resamp=flux_resamp,
                     err_resamp=err_resamp, line_colors={},
-                    inset_width="25%", show_ew_window = True,
-                    ew_window = window, inset_height="35%",
+                    inset_width="25%", inset_height="35%",
                     connector_color='red', loc1=1, loc2=3)
             elif name == 'Mg II':
                 make_zoom_inset(
