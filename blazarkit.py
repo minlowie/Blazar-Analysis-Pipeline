@@ -722,7 +722,8 @@ def plot_from_cache(results, save_dir=None,
                                  (cah_obs,  'Ca II H', 'forestgreen')],
                     x_fit=x_fit, flux_resamp=flux_resamp,
                     err_resamp=err_resamp, line_colors={},
-                    inset_width="25%", inset_height="35%",
+                    inset_width="25%", show_ew_window = True,
+                    ew_window = window, inset_height="35%",
                     connector_color='red', loc1=1, loc2=3)
             elif name == 'Mg II':
                 make_zoom_inset(
