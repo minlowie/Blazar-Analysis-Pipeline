@@ -730,7 +730,7 @@ def plot_from_cache(results, save_dir=None,
                     inset_width="22%", inset_height="30%",
                     connector_color='dodgerblue', loc1=2, loc2=4,
                     show_residual_highlight=False, show_total_fit=False,
-                    show_ew_window = True, ew_window = window
+                    show_ew_window = True, ew_window = window,
                     show_connector=False, ylim_percentiles=(5, 99))
             elif name == 'H_alpha': 
                 make_zoom_inset(
