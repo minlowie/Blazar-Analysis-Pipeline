@@ -260,6 +260,7 @@ def make_zoom_inset(ax, spec, fit_data, best_label, comp,
                     connector_color='red', borderpad=1.5,
                     loc1=1, loc2=3, force_model=None,
                     show_residual_highlight=False,
+                    show_ew_window=False,ew_window=None,
                     show_total_fit=True, show_connector=True,
                     ylim_percentiles=(2, 98), line_colors=None):
     """Create a zoom-in inset panel highlighting a spectral feature."""
@@ -344,7 +345,13 @@ def make_zoom_inset(ax, spec, fit_data, best_label, comp,
                       ha='center', color='brown', fontweight='bold',
                       bbox=dict(boxstyle='round', facecolor='white',
                                 alpha=0.9, edgecolor=color, linewidth=1.2))
-
+    if show_ew_window and ew_window is not None:
+        line_center = center_waves[0]
+        ax_inset.axvspan(line_center - ew_window,
+                         line_center + ew_window,
+                         color='gold', alpha=0.3,
+                         label=f'EW window (±{ew_window} Å)')
+        
     ax_inset.set_xlim(zoom_min, zoom_max)
     ax_inset.tick_params(labelsize=7, direction='in')
     ax_inset.grid(alpha=0.3, linestyle='--', linewidth=0.5)
@@ -723,6 +730,7 @@ def plot_from_cache(results, save_dir=None,
                     inset_width="22%", inset_height="30%",
                     connector_color='dodgerblue', loc1=2, loc2=4,
                     show_residual_highlight=False, show_total_fit=False,
+                    show_ew_window = True, ew_window = window
                     show_connector=False, ylim_percentiles=(5, 99))
             elif name == 'H_alpha': 
                 make_zoom_inset(
