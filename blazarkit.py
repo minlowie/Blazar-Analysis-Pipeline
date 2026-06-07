@@ -351,7 +351,13 @@ def make_zoom_inset(ax, spec, fit_data, best_label, comp,
                          line_center + ew_window,
                          color='gold', alpha=0.3,
                          label=f'EW window (±{ew_window} Å)')
-        
+            # Label showing the window size
+        ax_inset.text(line_center, y_lim[0] + 0.05 * (y_lim[1] - y_lim[0]),
+                  f'±{ew_window} Å',
+                  fontsize=7, ha='center', va='bottom',
+                  color='goldenrod', fontweight='bold',
+                  bbox=dict(boxstyle='round', facecolor='white',
+                            alpha=0.8, edgecolor='gold', linewidth=1))
     ax_inset.set_xlim(zoom_min, zoom_max)
     ax_inset.tick_params(labelsize=7, direction='in')
     ax_inset.grid(alpha=0.3, linestyle='--', linewidth=0.5)
