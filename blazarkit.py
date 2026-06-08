@@ -402,7 +402,7 @@ def get_redshift_peaks(pz_total, z_grid, min_height=0.05):
 
 # ── Main plot function ────────────────────────────────────────────────────────
 
-def plot_from_cache(results, save_dir=None,
+def plot_from_cache(results, model, save_dir=None,
                     show_fig1=False,
                     show_fig2=True,
                     show_inset=True,
@@ -410,7 +410,6 @@ def plot_from_cache(results, save_dir=None,
                     show_components=True,
                     show_line_markers=True,
                     show_fraction_label=True,
-                    models_to_show='best',
                     wavelength_range=(3600, 10400),
                     ylim=None):
     """
@@ -427,7 +426,8 @@ def plot_from_cache(results, save_dir=None,
     show_components      : bool - show shaded component fills (default True)
     show_line_markers    : bool - show spectral line markers (default True)
     show_fraction_label  : bool - show Host/Jet fraction text box (default True)
-    models_to_show       : best, all, or list of model name strings
+    model                : required. 'best', 'all', or a list of model names e.g.
+                             ['Powerlaw+Galaxy', 'Powerlaw+QSO']
     wavelength_range     : tuple (wave_min, wave_max) in Angstrom
     ylim                 : tuple (y_min, y_max) or None for automatic limits
 
@@ -439,7 +439,7 @@ def plot_from_cache(results, save_dir=None,
     --------
     fig1, fig2 = plot_from_cache(results)
     fig1, fig2 = plot_from_cache(results, show_fig1=True)
-    fig1, fig2 = plot_from_cache(results, models_to_show='all')
+    fig1, fig2 = plot_from_cache(results, model='all')
     fig1, fig2 = plot_from_cache(results, wavelength_range=(4000, 7000))
     fig1, fig2 = plot_from_cache(results, ylim=(-2, 30))
     """
@@ -619,12 +619,12 @@ def plot_from_cache(results, save_dir=None,
         ('fit_galpl',  'r',      3.0, {},           'Powerlaw+Galaxy'),
     ]
     for key, color, lw, kwargs, label in fit_curves:
-        if models_to_show == 'best':
+        if model == 'best':
             clean_label = label.replace(' Fit', '')
             if not best_label.startswith(clean_label):
                 continue
-        elif isinstance(models_to_show, list):
-            if label not in models_to_show and label.replace(' Fit','') not in models_to_show:
+        elif isinstance(model, list):
+            if label not in model and label.replace(' Fit','') not in model:
                 continue
         fd = fit_data.get(key)
         if fd is not None and fd.get('best_fit') is not None:
