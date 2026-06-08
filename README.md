@@ -74,8 +74,8 @@ The cache contains one file per source in the format `obj_{SDSS_ID}_{MJD}.pkl.gz
 
 The Value-Added Catalogue (VAC) is available through the SDSS Science Archive Server (SAS):
 
-> **SDSS-V DR20 VAC: to be added upon publication**
-> https://data.sdss.org/sas/dr20/
+> **SDSS-V DR20 VAC: this is to be added upon publication**
+> https://data.sdss.org/sas/dr20/ : 
 
 The VAC contains the full sample of 707 blazar candidates with their classifications, redshifts, jet fractions, and continuum parameters. You can use it to select sources of interest before loading them from the cache.
 
@@ -93,8 +93,8 @@ cache = RedshiftResultsCache(cache_dir='/path/to/SDSS-V_Fermi_Blazars_Cache')
 # (find these in the VAC table or from the cache filenames)
 results = cache.load_object_results('20570296', mjd=60027)
 
-# Plot everything with defaults
-fig1, fig2 = plot_from_cache(results)
+# Plot spectrum with best model (model is required)
+fig1, fig2 = plot_from_cache(results, model='best')
 ```
 
 ---
@@ -115,33 +115,32 @@ from blazarkit import RedshiftResultsCache, plot_from_cache, normalize_shape
 cache = RedshiftResultsCache(cache_dir='/path/to/SDSS-V_Fermi_Blazars_Cache')
 results = cache.load_object_results('20570296', mjd=60027)
 
-# Default — all panels, best model only
-fig1, fig2 = plot_from_cache(results)
+# Best model only — spectrum only (model is required)
+fig1, fig2 = plot_from_cache(results, model='best')
 
-# Only the spectrum — skip the chi2/p(z) figure
-fig1, fig2 = plot_from_cache(results, show_fig1=False)
+# All model fits overlaid
+fig1, fig2 = plot_from_cache(results, model='all')
 
-# Show all model fits overlaid
-fig1, fig2 = plot_from_cache(results, models_to_show='all')
+# Specific models only
+fig1, fig2 = plot_from_cache(results, model=['best', 'Powerlaw+Galaxy', 'Powerlaw+QSO'])
+
+# Also show chi2/p(z) figure
+fig1, fig2 = plot_from_cache(results, model='best', show_fig1=True)
 
 # Minimal clean plot
-fig1, fig2 = plot_from_cache(results,
-                              show_fig1=False,
+fig1, fig2 = plot_from_cache(results, model='best',
                               show_inset=False,
                               show_line_markers=False,
                               show_residuals=False)
 
 # Zoom into a specific wavelength range
-fig1, fig2 = plot_from_cache(results,
-                              show_fig1=False,
-                              wavelength_range=(4000, 7000))
+fig1, fig2 = plot_from_cache(results, model='best', wavelength_range=(4000, 7000))
 
 # Override y-axis limits
-fig1, fig2 = plot_from_cache(results, show_fig1=False, ylim=(-2, 30))
+fig1, fig2 = plot_from_cache(results, model='best', ylim=(-2, 30))
 
 # Save to PDF
-fig1, fig2 = plot_from_cache(results, show_fig1=False,
-                              save_dir='my_plots')
+fig1, fig2 = plot_from_cache(results, model='best', save_dir='my_plots')
 ```
 
 ---
@@ -151,15 +150,15 @@ fig1, fig2 = plot_from_cache(results, show_fig1=False,
 ### `plot_from_cache`
 
 ```python
-plot_from_cache(results, save_dir=None,
-                show_fig1=True,
+plot_from_cache(results, model,
+                save_dir=None,
+                show_fig1=False,
                 show_fig2=True,
                 show_inset=True,
                 show_residuals=True,
                 show_components=True,
                 show_line_markers=True,
                 show_fraction_label=True,
-                models_to_show='best',
                 wavelength_range=(3600, 10400),
                 ylim=None)
 ```
@@ -168,14 +167,15 @@ plot_from_cache(results, save_dir=None,
 |-----------|---------|-------------|
 | `results` | — | Dict from `cache.load_object_results()` |
 | `save_dir` | `None` | Directory to save PDF; if None, not saved |
-| `show_fig1` | `True` | Show χ²(z) and p(z) diagnostic figure |
+| `model` | required | `'best'`, `'all'`, or list e.g. `['Powerlaw+Galaxy', 'Powerlaw+QSO']` |
+| `show_fig1` | `False` | Show χ²(z) and p(z) diagnostic figure |
 | `show_fig2` | `True` | Show best-fit spectrum figure |
 | `show_inset` | `True` | Show zoom insets for detected lines only |
 | `show_residuals` | `True` | Show normalised residuals panel |
 | `show_components` | `True` | Show shaded host/jet component fills |
 | `show_line_markers` | `True` | Show emission/absorption line markers |
 | `show_fraction_label` | `True` | Show Host/Jet percentage text box |
-| `models_to_show` | `'best'` | `'best'`, `'all'`, or list of model names |
+
 | `wavelength_range` | `(3600, 10400)` | Wavelength range in Å |
 | `ylim` | `None` | Override automatic y-axis limits as `(y_min, y_max)` |
 
@@ -351,7 +351,7 @@ Check that your cache directory path is correct and the file exists in the forma
 Add `%matplotlib inline` at the top of your notebook.
 
 **Zoom insets not appearing**
-Insets only appear for lines detected at S/N ≥ 3. Run `compute_EW_for_all_lines` directly to check which lines are detected for your source.
+Insets only appear for lines detected at the required S/N. Ca II H&K requires S/N >= 5; Mg II and H-alpha require S/N >= 3. Run `compute_EW_for_all_lines` to check detected lines.
 
 **Windows path issues**
 Use forward slashes or raw strings for paths:
