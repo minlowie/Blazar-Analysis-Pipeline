@@ -39,7 +39,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-# ── Line lists (rest-frame wavelengths in Å) ─────────────────────────────────
+# -- Line lists (rest-frame wavelengths in Angstrong) ---------------------------
 
 EMISSION_LINES = {
     'Ly_alpha': 1215,
@@ -64,8 +64,7 @@ ABSORPTION_LINES = {
 }
 
 
-# ── Cache system ──────────────────────────────────────────────────────────────
-
+# -- Cache system --------------------------------------------------------------
 class RedshiftResultsCache:
     """
     Load and save spectral fitting results cached as compressed pickle files.
@@ -115,7 +114,7 @@ class RedshiftResultsCache:
         return files
 
 
-# ── Line marking ─────────────────────────────────────────────────────────────
+# --- Line marking -------------------------------------------------------------
 
 def mark_spectral_lines(ax, z, obs_range=(3600, 10400)):
     """Mark emission and absorption lines at redshift z on axes ax."""
@@ -157,7 +156,7 @@ def add_line_markers_to_plot(ax, z_fit, x_range=None):
     ax.legend(handles, labels, fontsize=9, loc='upper right')
 
 
-# ── EW measurement ────────────────────────────────────────────────────────────
+# -- EW measurement ------------------------------------------------------------
 
 def measure_equivalent_width_hybrid_normalized(
         wave, flux, err, fit_mask, line_center,
@@ -251,7 +250,7 @@ def compute_EW_for_all_lines(wave, flux, err, fit_mask, z):
     return results_ew
 
 
-# ── Zoom inset ────────────────────────────────────────────────────────────────
+# -- Zoom inset ----------------------------------------------------------------
 
 def make_zoom_inset(ax, spec, fit_data, best_label, comp,
                     center_waves, zoom_width, loc, line_labels,
@@ -370,7 +369,7 @@ def make_zoom_inset(ax, spec, fit_data, best_label, comp,
     return ax_inset
 
 
-# ── Module-level utility functions ───────────────────────────────────────────
+#-- Module-level utility functions ----------------------------------------------
 
 def normalize_shape(p):
     """Normalise an array to its peak value for shape comparison plots."""
@@ -400,7 +399,7 @@ def get_redshift_peaks(pz_total, z_grid, min_height=0.05):
                   key=lambda x: x[1], reverse=True)
 
 
-# ── Main plot function ────────────────────────────────────────────────────────
+# -- Main plot function ----------------------------------------------------------
 
 def plot_from_cache(results, model, save_dir=None,
                     show_fig1=False,
@@ -477,7 +476,7 @@ def plot_from_cache(results, model, save_dir=None,
 
     wave_min, wave_max = wavelength_range
 
-    # ── Figure 1: χ²(z) and p(z) ─────────────────────────────────────────────
+    # -- Figure 1: chi squared (z) and p(z) ---------------------------------
     fig = plt.figure(figsize=(16, 12))
     gs  = GridSpec(4, 3, height_ratios=[1.6, 1.6, 1.1, 1.8],
                    hspace=0.7, wspace=0.45,
@@ -591,7 +590,7 @@ def plot_from_cache(results, model, save_dir=None,
         plt.close(fig)
         fig = None
 
-    # ── Figure 2: Best-fit spectrum ───────────────────────────────────────────
+    # -- Figure 2: Best-fit spectrum --------------------------------------------
     if not show_fig2:
         return fig, None
 
@@ -611,12 +610,12 @@ def plot_from_cache(results, model, save_dir=None,
                           color='gray', alpha=0.4, label=r'$\pm 1\sigma$')
 
     fit_curves = [
-        ('fit_gal',    'g',      1.2, {},           'Galaxy Fit'),
-        ('fit_qso',    'b',      1.2, {},           'QSO Fit'),
-        ('fit_pl',     'orange', 1.2, {'ls': '--'}, 'Powerlaw Fit'),
-        ('fit_qsopl',  'purple', 1.2, {},           'Powerlaw+QSO'),
-        ('fit_linepl', 'cyan',   1.2, {},           'Powerlaw+Lines'),
-        ('fit_galpl',  'r',      3.0, {},           'Powerlaw+Galaxy'),
+        ('fit_gal',    'g',      1.5, {'alpha': 0.5},                'Galaxy Fit'),
+        ('fit_qso',    'b',      1.5, {'alpha': 0.5},                'QSO Fit'),
+        ('fit_pl',     'orange', 1.5, {'ls': '--', 'alpha': 0.5},    'Powerlaw Fit'),
+        ('fit_qsopl',  'purple', 1.5, {'alpha': 0.5},                'Powerlaw+QSO'),
+        ('fit_linepl', 'cyan',   1.5, {'alpha': 0.5},                'Powerlaw+Lines'),
+        ('fit_galpl',  'r',      1.5, {'alpha': 0.5},                'Powerlaw+Galaxy'),
     ]
     key_to_family = {
         'fit_gal'    : 'Galaxy',
@@ -666,8 +665,13 @@ def plot_from_cache(results, model, save_dir=None,
 
         fd = fit_data.get(key)
         if fd is not None and fd.get('best_fit') is not None:
-            axs2[0].plot(x_fit, fd['best_fit'], color=color, lw=lw,
-                         label=label, **kwargs)
+            is_best    = _is_best_model(key, best_label, key_to_family)
+            plot_lw    = 3.0 if is_best else lw
+            plot_alpha = 1.0 if is_best else kwargs.get('alpha', 0.5)
+            plot_kwargs = {k: v for k, v in kwargs.items() if k != 'alpha'}
+            axs2[0].plot(x_fit, fd['best_fit'], color=color,
+                         lw=plot_lw, alpha=plot_alpha,
+                         label=label, **plot_kwargs)
 
     # y-limits
     all_flux = [flux_resamp]
@@ -843,7 +847,7 @@ def plot_from_cache(results, model, save_dir=None,
     return fig, fig2
 
 
-# ── Multi-object comparison plot ──────────────────────────────────────────────
+# -- Multi-object comparison plot ----------------------------------------------
 
 def plot_multi_object_comparison_single(object_list, cache, final_bl,
                                         n_cols=2, save_dir="paper_plots"):
@@ -1157,7 +1161,7 @@ def plot_multi_object_comparison_single(object_list, cache, final_bl,
     return fig
 
 
-# ── New utility functions ─────────────────────────────────────────────────────
+# -- New utility functions ------------------------------------------------------
 
 def classification_summary(results):
     """
