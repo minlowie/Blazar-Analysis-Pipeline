@@ -666,8 +666,8 @@ def plot_from_cache(results, model, save_dir=None,
         fd = fit_data.get(key)
         if fd is not None and fd.get('best_fit') is not None:
             is_best    = _is_best_model(key, best_label, key_to_family)
-            plot_lw    = 3.0 if is_best else lw
-            plot_alpha = 1.0 if is_best else kwargs.get('alpha', 0.5)
+            plot_lw    = 2.5 if is_best else lw
+            plot_alpha = 0.8 if is_best else kwargs.get('alpha', 0.5)
             plot_kwargs = {k: v for k, v in kwargs.items() if k != 'alpha'}
             axs2[0].plot(x_fit, fd['best_fit'], color=color,
                          lw=plot_lw, alpha=plot_alpha,
