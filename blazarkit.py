@@ -23,7 +23,7 @@ Requirements
 Reference
 ---------
     Nlowie et al. (in prep.)
-    Cache data available at: <Zenodo DOI — to be added upon publication>
+    Cache data available at: <Zenodo DOI - to be added upon publication>
 """
 
 import os
@@ -348,13 +348,10 @@ def make_zoom_inset(ax, spec, fit_data, best_label, comp,
 
     if show_ew_window and ew_window is not None:
         line_center = center_waves[0]
-        ax_inset.axvspan(line_center - ew_window,
-                         line_center + ew_window,
+        ax_inset.axvspan(line_center - ew_window, line_center + ew_window,
                          color='gold', alpha=0.3)
-        ax_inset.text(line_center,
-                      y_lim[0] + 0.05 * (y_lim[1] - y_lim[0]),
-                      f'+/-{ew_window} A',
-                      fontsize=7, ha='center', va='bottom',
+        ax_inset.text(line_center, y_lim[0] + 0.05 * (y_lim[1] - y_lim[0]),
+                      f'+/-{ew_window} A', fontsize=7, ha='center', va='bottom',
                       color='goldenrod', fontweight='bold',
                       bbox=dict(boxstyle='round', facecolor='white',
                                 alpha=0.8, edgecolor='gold', linewidth=1))
@@ -386,34 +383,27 @@ def get_redshift_peaks(pz_total, z_grid, min_height=0.05):
 
     Parameters
     ----------
-    pz_total   : array — global p(z) posterior
-    z_grid     : array — redshift grid
-    min_height : float — minimum normalised height to report a peak (default 0.05)
+    pz_total   : array - global p(z) posterior
+    z_grid     : array - redshift grid
+    min_height : float - minimum normalised height to report a peak (default 0.05)
 
     Returns
     -------
     peaks : list of (z, relative_height) tuples sorted by height descending
     """
     from scipy.signal import find_peaks
-
     p_norm      = pz_total / np.max(pz_total)
-    peak_idx, _ = find_peaks(p_norm, height=min_height, distance=2,
-                              prominence=0.03)
-
+    peak_idx, _ = find_peaks(p_norm, height=min_height, distance=2, prominence=0.03)
     if len(peak_idx) == 0:
         peak_idx = [np.argmax(p_norm)]
-
-    peaks = sorted(
-        [(z_grid[idx], float(p_norm[idx])) for idx in peak_idx],
-        key=lambda x: x[1], reverse=True
-    )
-    return peaks
+    return sorted([(z_grid[idx], float(p_norm[idx])) for idx in peak_idx],
+                  key=lambda x: x[1], reverse=True)
 
 
 # ── Main plot function ────────────────────────────────────────────────────────
 
 def plot_from_cache(results, save_dir=None,
-                    show_fig1=True,
+                    show_fig1=False,
                     show_fig2=True,
                     show_inset=True,
                     show_residuals=True,
@@ -428,27 +418,27 @@ def plot_from_cache(results, save_dir=None,
 
     Parameters
     ----------
-    results              : dict — output of RedshiftResultsCache.load_object_results()
-    save_dir             : str or None — saves spectral plot as PDF if provided
-    show_fig1            : bool — show chi2(z) and p(z) figure (default True)
-    show_fig2            : bool — show best-fit spectrum figure (default True)
-    show_inset           : bool — show zoom insets for detected lines (default True)
-    show_residuals       : bool — show normalised residuals panel (default True)
-    show_components      : bool — show shaded component fills (default True)
-    show_line_markers    : bool — show spectral line markers (default True)
-    show_fraction_label  : bool — show Host/Jet fraction text box (default True)
-    models_to_show       : 'best', 'all', or list of model name strings
+    results              : dict - output of RedshiftResultsCache.load_object_results()
+    save_dir             : str or None - saves spectral plot as PDF if provided
+    show_fig1            : bool - show chi2(z) and p(z) figure (default False)
+    show_fig2            : bool - show best-fit spectrum figure (default True)
+    show_inset           : bool - show zoom insets for detected lines (default True)
+    show_residuals       : bool - show normalised residuals panel (default True)
+    show_components      : bool - show shaded component fills (default True)
+    show_line_markers    : bool - show spectral line markers (default True)
+    show_fraction_label  : bool - show Host/Jet fraction text box (default True)
+    models_to_show       : best, all, or list of model name strings
     wavelength_range     : tuple (wave_min, wave_max) in Angstrom
     ylim                 : tuple (y_min, y_max) or None for automatic limits
 
     Returns
     -------
-    fig, fig2 : matplotlib Figure objects (None if show_fig1/show_fig2 is False)
+    fig, fig2 : matplotlib Figure objects
 
     Examples
     --------
     fig1, fig2 = plot_from_cache(results)
-    fig1, fig2 = plot_from_cache(results, show_fig1=False)
+    fig1, fig2 = plot_from_cache(results, show_fig1=True)
     fig1, fig2 = plot_from_cache(results, models_to_show='all')
     fig1, fig2 = plot_from_cache(results, wavelength_range=(4000, 7000))
     fig1, fig2 = plot_from_cache(results, ylim=(-2, 30))
@@ -547,7 +537,7 @@ def plot_from_cache(results, save_dir=None,
                         alpha=0.7, label='SDSS z')
     ax_ptot.set_xlabel('Redshift z (log)', fontsize=9)
     ax_ptot.set_ylabel('Probability density', fontsize=9)
-    ax_ptot.set_title(f'Global p(z) — C_global={C_global:.1f}', fontsize=10)
+    ax_ptot.set_title(f'Global p(z) - C_global={C_global:.1f}', fontsize=10)
     ax_ptot.grid(alpha=0.3)
     ax_ptot.set_xscale('log')
     ax_ptot.legend(fontsize=7, ncol=3, loc='upper right')
@@ -589,7 +579,7 @@ def plot_from_cache(results, save_dir=None,
     ax_chi.set_xscale('log')
     ax_chi.set_xlabel('Redshift z (log)', fontsize=9)
     ax_chi.set_ylabel(r'$\chi^2$', fontsize=9)
-    ax_chi.set_title(f'SDSS_ID: {ID} — $\\chi^2(z)$ for all templates',
+    ax_chi.set_title(f'SDSS_ID: {ID} - $\\chi^2(z)$ for all templates',
                      fontsize=10)
     ax_chi.grid(alpha=0.3)
     ax_chi.legend(ncol=3, fontsize=6)
@@ -630,9 +620,9 @@ def plot_from_cache(results, save_dir=None,
     ]
     for key, color, lw, kwargs, label in fit_curves:
         if models_to_show == 'best':
-            if not best_label.startswith(label.replace(' Fit', '').replace('Galaxy Fit','Galaxy').replace('QSO Fit','QSO').replace('Powerlaw Fit','Powerlaw')):
-                if label.replace(' Fit','') != best_label:
-                    continue
+            clean_label = label.replace(' Fit', '')
+            if not best_label.startswith(clean_label):
+                continue
         elif isinstance(models_to_show, list):
             if label not in models_to_show and label.replace(' Fit','') not in models_to_show:
                 continue
@@ -660,12 +650,12 @@ def plot_from_cache(results, save_dir=None,
         axs2[0].set_ylim(y_lo - y_pad, y_hi + y_pad)
     axs2[0].set_xlim(wave_min, wave_max)
 
-    # EW computation — needed for inset detection logic
+    # Line markers - must come before zoom insets
     results_ew = compute_EW_for_all_lines(
         common_wave, flux_resamp, err_resamp, fit_mask, z_best)
     for name, obs, ew, ew_err, snr, detected, ltype, window in results_ew:
         if detected:
-            print(f"  {name:15s}: EW = {ew:6.2f} +/- {ew_err:5.2f} A, "
+            print(f"  {name:15s}: EW = {ew:6.2f} ± {ew_err:5.2f} Å, "
                   f"SNR = {snr:4.1f}")
     if show_line_markers:
         add_line_markers_to_plot(axs2[0], z_best,
@@ -717,7 +707,7 @@ def plot_from_cache(results, save_dir=None,
                      bbox=dict(boxstyle='round', facecolor='lightcyan',
                                alpha=0.9, edgecolor='black', linewidth=2.5))
 
-    # Zoom insets — only for detected lines when show_inset=True
+    # Zoom insets -- only for detected lines when show_inset=True
     if show_inset:
         cah_obs = 3967.5 * (1 + z_best)
         for name, obs_wave, ew, ew_err, snr, detected, ltype, window in results_ew:
@@ -730,7 +720,7 @@ def plot_from_cache(results, save_dir=None,
                     center_waves=[obs_wave, cah_obs], zoom_width=140,
                     loc='lower right',
                     line_labels=[(obs_wave, 'Ca II K', 'forestgreen'),
-                                 (cah_obs,  'Ca II H', 'forestgreen')],
+                                 (cah_obs, 'Ca II H', 'forestgreen')],
                     x_fit=x_fit, flux_resamp=flux_resamp,
                     err_resamp=err_resamp, line_colors={},
                     inset_width="25%", inset_height="35%",
@@ -780,20 +770,18 @@ def plot_from_cache(results, save_dir=None,
 
     # Residuals
     if show_residuals and len(axs2) > 1:
-        if best_params is not None and best_params['best_fit'] is not None:
-            resi = (spec['y_fit'] - best_params['best_fit']) / spec['e_fit']
-            axs2[1].plot(x_fit, resi, color='purple', lw=1,
-                         label='Normalized residuals')
-            axs2[1].axhline(0, color='gray', ls='--', lw=1)
-            axs2[1].fill_between(x_fit, -3, 3, color='gray', alpha=0.2,
-                                  label=r'$\pm3\sigma$')
-        axs2[1].set_ylim(-5, 5)
-        axs2[1].set_xlabel(r'Wavelength [Å]', fontsize=12, fontweight='bold')
-        axs2[1].set_ylabel(r'Residual ($\sigma$)', fontsize=12, fontweight='bold')
-        axs2[1].legend(fontsize=10)
-        axs2[1].grid(alpha=0.3)
-    else:
-        axs2[0].set_xlabel(r'Wavelength [Å]', fontsize=12, fontweight='bold')
+     if best_params is not None and best_params['best_fit'] is not None:
+        resi = (spec['y_fit'] - best_params['best_fit']) / spec['e_fit']
+        axs2[1].plot(x_fit, resi, color='purple', lw=1,
+                     label='Normalized residuals')
+        axs2[1].axhline(0, color='gray', ls='--', lw=1)
+        axs2[1].fill_between(x_fit, -3, 3, color='gray', alpha=0.2,
+                              label=r'$\pm3\sigma$')
+    axs2[1].set_ylim(-5, 5)
+    axs2[1].set_xlabel(r'Wavelength [Å]', fontsize=12, fontweight='bold')
+    axs2[1].set_ylabel(r'Residual ($\sigma$)', fontsize=12, fontweight='bold')
+    axs2[1].legend(fontsize=10)
+    axs2[1].grid(alpha=0.3)
 
     plt.tight_layout()
     plt.show()
@@ -826,9 +814,9 @@ def plot_multi_object_comparison_single(object_list, cache, final_bl,
     ----------
     object_list : list of dicts with keys 'SDSS_ID' and optionally 'MJD'
     cache       : RedshiftResultsCache instance
-    final_bl    : astropy Table — the main blazar sample table
-    n_cols      : int — number of columns in the grid
-    save_dir    : str — directory to save the output PDF
+    final_bl    : astropy Table - the main blazar sample table
+    n_cols      : int - number of columns in the grid
+    save_dir    : str - directory to save the output PDF
     """
     import string
     n_objects   = len(object_list)
@@ -1137,17 +1125,11 @@ def classification_summary(results):
 
     Parameters
     ----------
-    results : dict — output of RedshiftResultsCache.load_object_results()
+    results : dict - output of RedshiftResultsCache.load_object_results()
 
     Returns
     -------
-    summary : str — human-readable classification string
-
-    Example
-    -------
-    classification_summary(results)
-    # → "BL Lac candidate at z=0.199 | Jet-dominated (71.9%) | 
-    #    Host galaxy detected | Ca II K absorption (S/N=8.2)"
+    summary : str
     """
     meta   = results['metadata']
     lmfit  = results['lmfit_results']
@@ -1158,7 +1140,6 @@ def classification_summary(results):
     z      = lmfit['z_best']
     sn     = meta['sn_median']
 
-    # Blazar class
     if best == 'Powerlaw+Galaxy' or best == 'Powerlaw':
         blazar_class = 'BL Lac candidate'
     elif best.startswith('Powerlaw+QSO') or best.startswith('Powerlaw+Lines'):
@@ -1170,7 +1151,6 @@ def classification_summary(results):
     else:
         blazar_class = 'Unclassified'
 
-    # Jet fraction
     jet_str = ''
     if best == 'Powerlaw+Galaxy' and comp['galpl_contrib'] is not None:
         fjet = comp['galpl_contrib']['frac_pl']
@@ -1184,7 +1164,6 @@ def classification_summary(results):
     elif best == 'Powerlaw':
         jet_str = 'Featureless jet continuum | No host detected'
 
-    # Key detected lines
     results_ew = compute_EW_for_all_lines(
         spec['common_wave'], spec['flux_resamp'],
         spec['err_resamp'], spec['fit_mask'], z)
@@ -1195,20 +1174,15 @@ def classification_summary(results):
     ]
     lines_str = ' | '.join(detected_lines[:3]) if detected_lines else 'No lines detected'
 
-    summary = (
-        f"{blazar_class} at z={z:.4f} | "
-        f"{jet_str} | "
-        f"S/N={sn:.1f} | "
-        f"{lines_str}"
-    )
+    summary = (f"{blazar_class} at z={z:.4f} | {jet_str} | "
+               f"S/N={sn:.1f} | {lines_str}")
 
     print(f"\n{'='*70}")
     print(f"SDSS_ID: {meta['SDSS_ID']} | Fermi: {meta['fermi_class']} | "
           f"SDSS: {meta['obj_class']}")
-    print(f"{'─'*70}")
+    print(f"{'-'*70}")
     print(summary)
     print(f"{'='*70}\n")
-
     return summary
 
 
@@ -1219,31 +1193,22 @@ def compare_epochs(sdss_id, mjd_list, cache,
     """
     Overlay spectra from multiple epochs for a single source.
 
-    Useful for identifying spectral variability and changing-look blazar
-    candidates. Spectra are coloured from dark (earliest) to bright (latest).
-
     Parameters
     ----------
-    sdss_id          : str — SDSS_ID of the source
-    mjd_list         : list of int — MJD values for each epoch to load
+    sdss_id          : str
+    mjd_list         : list of int
     cache            : RedshiftResultsCache instance
-    wavelength_range : tuple (wave_min, wave_max) in Angstrom
-    show_model       : bool — overlay best-fit model for each epoch
-    save_dir         : str or None — save figure as PDF if provided
-
-    Returns
-    -------
-    fig : matplotlib Figure
+    wavelength_range : tuple (wave_min, wave_max)
+    show_model       : bool - overlay best-fit model
+    save_dir         : str or None
     """
     wave_min, wave_max = wavelength_range
     n_epochs = len(mjd_list)
-
-    cmap   = plt.cm.viridis
-    colors = cmap(np.linspace(0.15, 0.95, n_epochs))
+    cmap     = plt.cm.viridis
+    colors   = cmap(np.linspace(0.15, 0.95, n_epochs))
 
     fig, axes = plt.subplots(2, 1, figsize=(14, 8), sharex=True,
-                             gridspec_kw={'height_ratios': [4, 1],
-                                          'hspace': 0.05})
+                             gridspec_kw={'height_ratios': [4, 1], 'hspace': 0.05})
 
     print(f"\nComparing {n_epochs} epochs for SDSS_ID {sdss_id}")
     print("="*60)
@@ -1251,21 +1216,17 @@ def compare_epochs(sdss_id, mjd_list, cache,
     epoch_data = []
     for j, mjd in enumerate(sorted(mjd_list)):
         try:
-            res    = cache.load_object_results(str(sdss_id), mjd=mjd)
-            spec   = res['spectrum']
-            lmfit  = res['lmfit_results']
-            comp   = res['components']
+            res   = cache.load_object_results(str(sdss_id), mjd=mjd)
+            spec  = res['spectrum']
+            lmfit = res['lmfit_results']
+            comp  = res['components']
+            wave  = spec['common_wave']
+            flux  = spec['flux_resamp']
+            err   = spec['err_resamp']
+            z     = lmfit['z_best']
+            best  = lmfit['best_label']
+            mask  = (wave >= wave_min) & (wave <= wave_max)
 
-            wave   = spec['common_wave']
-            flux   = spec['flux_resamp']
-            err    = spec['err_resamp']
-            z      = lmfit['z_best']
-            best   = lmfit['best_label']
-
-            # Mask to wavelength range
-            mask = (wave >= wave_min) & (wave <= wave_max)
-
-            # Jet fraction
             jet_frac = np.nan
             if best == 'Powerlaw+Galaxy' and comp['galpl_contrib'] is not None:
                 jet_frac = comp['galpl_contrib']['frac_pl']
@@ -1274,48 +1235,35 @@ def compare_epochs(sdss_id, mjd_list, cache,
             elif best.startswith('Powerlaw+Lines') and comp['linepl_contrib'] is not None:
                 jet_frac = comp['linepl_contrib']['frac_pl']
 
-            label = (f"MJD={mjd} | z={z:.4f} | {best.split('(')[0].strip()}"
-                     f" | Jet={jet_frac*100:.1f}%" if np.isfinite(jet_frac)
-                     else f"MJD={mjd} | z={z:.4f} | {best.split('(')[0].strip()}")
+            jf_str = f" | Jet={jet_frac*100:.1f}%" if np.isfinite(jet_frac) else ""
+            label  = f"MJD={mjd} | z={z:.4f} | {best.split('(')[0].strip()}{jf_str}"
 
-            axes[0].plot(wave[mask], flux[mask],
-                         color=colors[j], lw=1.2, alpha=0.8, label=label)
-            axes[0].fill_between(wave[mask],
-                                  flux[mask] - err[mask],
-                                  flux[mask] + err[mask],
+            axes[0].plot(wave[mask], flux[mask], color=colors[j], lw=1.2,
+                         alpha=0.8, label=label)
+            axes[0].fill_between(wave[mask], flux[mask]-err[mask],
+                                  flux[mask]+err[mask],
                                   color=colors[j], alpha=0.15)
 
-            # Best-fit model overlay
             if show_model and lmfit['best_fit_params']['best_fit'] is not None:
-                x_fit     = spec['x_fit']
-                best_fit  = lmfit['best_fit_params']['best_fit']
-                xfit_mask = (x_fit >= wave_min) & (x_fit <= wave_max)
-                axes[0].plot(x_fit[xfit_mask], best_fit[xfit_mask],
-                             color=colors[j], lw=2.5, ls='--', alpha=0.9)
+                x_fit    = spec['x_fit']
+                best_fit = lmfit['best_fit_params']['best_fit']
+                xm       = (x_fit >= wave_min) & (x_fit <= wave_max)
+                axes[0].plot(x_fit[xm], best_fit[xm], color=colors[j],
+                             lw=2.5, ls='--', alpha=0.9)
 
-            # Residuals relative to first epoch
-            epoch_data.append({
-                'mjd': mjd, 'wave': wave[mask],
-                'flux': flux[mask], 'z': z,
-                'best': best, 'jet_frac': jet_frac,
-                'color': colors[j]
-            })
-
-            print(f"  MJD={mjd:<8} z={z:.4f}  Model={best:<25}  "
-                  f"Jet={jet_frac*100:.1f}%" if np.isfinite(jet_frac)
-                  else f"  MJD={mjd:<8} z={z:.4f}  Model={best}")
+            epoch_data.append({'mjd': mjd, 'wave': wave[mask],
+                                'flux': flux[mask], 'z': z, 'color': colors[j]})
+            print(f"  MJD={mjd:<8} z={z:.4f}  {best}{jf_str}")
 
         except Exception as e:
-            print(f"  MJD={mjd}: Failed to load — {e}")
+            print(f"  MJD={mjd}: Failed - {e}")
 
-    # Flux ratio panel — each epoch divided by first epoch
     if len(epoch_data) > 1:
         ref_wave = epoch_data[0]['wave']
         ref_flux = epoch_data[0]['flux']
         for ep in epoch_data[1:]:
-            ratio = np.interp(ref_wave, ep['wave'], ep['flux']) / ref_flux
-            axes[1].plot(ref_wave, ratio,
-                         color=ep['color'], lw=1.2, alpha=0.8,
+            ratio = np.interp(ref_wave, ep['wave'], ep['flux']) / np.where(ref_flux != 0, ref_flux, np.nan)
+            axes[1].plot(ref_wave, ratio, color=ep['color'], lw=1.2, alpha=0.8,
                          label=f"MJD={ep['mjd']}/MJD={epoch_data[0]['mjd']}")
         axes[1].axhline(1.0, color='gray', ls='--', lw=1.2)
         axes[1].set_ylabel('Flux ratio', fontsize=11, fontweight='bold')
@@ -1323,30 +1271,26 @@ def compare_epochs(sdss_id, mjd_list, cache,
     else:
         axes[1].set_visible(False)
 
-    # Line markers at the redshift of the first epoch
     if epoch_data:
         add_line_markers_to_plot(axes[0], epoch_data[0]['z'],
                                   x_range=(wave_min, wave_max))
 
-    axes[0].set_ylabel(r'Flux [$10^{-17}$ erg/s/cm$^2$/Å]',
-                        fontsize=11, fontweight='bold')
-    axes[0].set_title(f'Epoch comparison — SDSS_ID {sdss_id} '
-                       f'({n_epochs} observations)',
-                       fontsize=13, fontweight='bold')
-    axes[0].legend(fontsize=8, ncol=2, framealpha=0.9)
-    axes[0].grid(alpha=0.3)
-    axes[0].set_xlim(wave_min, wave_max)
-
-    axes[1].set_xlabel(r'Wavelength [Å]', fontsize=12, fontweight='bold')
-    axes[1].grid(alpha=0.3)
-    axes[1].set_xlim(wave_min, wave_max)
-
-    # Colorbar showing MJD progression
     sm = plt.cm.ScalarMappable(cmap=cmap,
                                 norm=plt.Normalize(vmin=min(mjd_list),
                                                    vmax=max(mjd_list)))
     sm.set_array([])
     plt.colorbar(sm, ax=axes, label='MJD', shrink=0.6, pad=0.01)
+
+    axes[0].set_ylabel(r'Flux [$10^{-17}$ erg/s/cm$^2$/A]',
+                        fontsize=11, fontweight='bold')
+    axes[0].set_title(f'Epoch comparison - SDSS_ID {sdss_id} ({n_epochs} observations)',
+                       fontsize=13, fontweight='bold')
+    axes[0].legend(fontsize=8, ncol=2, framealpha=0.9)
+    axes[0].grid(alpha=0.3)
+    axes[0].set_xlim(wave_min, wave_max)
+    axes[1].set_xlabel(r'Wavelength [A]', fontsize=12, fontweight='bold')
+    axes[1].grid(alpha=0.3)
+    axes[1].set_xlim(wave_min, wave_max)
 
     plt.tight_layout()
 
@@ -1361,45 +1305,24 @@ def compare_epochs(sdss_id, mjd_list, cache,
     return fig
 
 
-def plot_population(results_list,
-                    x_param='z_best',
-                    y_param='jet_frac',
-                    color_by='best_label',
-                    wavelength_range=(3600, 10400),
-                    save_dir=None):
+def plot_population(results_list, x_param='z_best', y_param='jet_frac',
+                    color_by='best_label', save_dir=None):
     """
-    Population-level scatter plot and distributions from a list of cached results.
+    Population-level scatter plot and distribution from a list of cached results.
 
     Parameters
     ----------
-    results_list     : list of dicts from cache.load_object_results()
-    x_param          : str — x-axis parameter: 'z_best', 'pl_alpha', 'pl_delta',
-                       'aicc_margin', 'sn'
-    y_param          : str — y-axis parameter: same options as x_param,
-                       plus 'jet_frac'
-    color_by         : str — 'best_label' (model family) or 'fermi_class'
-    save_dir         : str or None — save as PDF if provided
-
-    Returns
-    -------
-    fig : matplotlib Figure
-
-    Example
-    -------
-    # Jet fraction vs redshift coloured by model
-    plot_population(results_list, x_param='z_best', y_param='jet_frac')
-
-    # PL alpha distribution coloured by Fermi class
-    plot_population(results_list, x_param='pl_alpha', y_param='jet_frac',
-                    color_by='fermi_class')
+    results_list : list of dicts from cache.load_object_results()
+    x_param      : 'z_best', 'pl_alpha', 'pl_delta', 'aicc_margin', 'sn', 'jet_frac'
+    y_param      : same options as x_param
+    color_by     : 'best_label' or 'fermi_class'
+    save_dir     : str or None
     """
-
     def extract(res, param):
         lm   = res['lmfit_results']
         comp = res['components']
         m    = res['metadata']
-        if param == 'z_best':
-            return lm['z_best']
+        if param == 'z_best':     return lm['z_best']
         elif param == 'jet_frac':
             best = lm['best_label']
             if best == 'Powerlaw+Galaxy' and comp['galpl_contrib']:
@@ -1409,14 +1332,10 @@ def plot_population(results_list,
             elif best.startswith('Powerlaw+Lines') and comp['linepl_contrib']:
                 return comp['linepl_contrib']['frac_pl']
             return np.nan
-        elif param == 'pl_alpha':
-            return lm.get('pl_alpha', np.nan)
-        elif param == 'pl_delta':
-            return lm.get('pl_delta', np.nan)
-        elif param == 'aicc_margin':
-            return lm.get('aicc_margin', np.nan)
-        elif param == 'sn':
-            return m['sn_median']
+        elif param == 'pl_alpha':    return lm.get('pl_alpha', np.nan)
+        elif param == 'pl_delta':    return lm.get('pl_delta', np.nan)
+        elif param == 'aicc_margin': return lm.get('aicc_margin', np.nan)
+        elif param == 'sn':          return m['sn_median']
         return np.nan
 
     def get_color_label(res):
@@ -1424,49 +1343,41 @@ def plot_population(results_list,
         m  = res['metadata']
         if color_by == 'best_label':
             best = lm['best_label']
-            if best == 'Powerlaw+Galaxy':   return 'PL+Galaxy',  'steelblue'
-            elif best == 'Powerlaw':        return 'Powerlaw',   'orange'
-            elif best.startswith('Powerlaw+QSO'):   return 'PL+QSO',   'purple'
-            elif best.startswith('Powerlaw+Lines'): return 'PL+Lines', 'cyan'
-            elif best == 'Galaxy':          return 'Galaxy',     'green'
-            elif best == 'QSO':             return 'QSO',        'blue'
-            else:                           return 'Other',      'gray'
+            if best == 'Powerlaw+Galaxy':            return 'PL+Galaxy',  'steelblue'
+            elif best == 'Powerlaw':                 return 'Powerlaw',   'orange'
+            elif best.startswith('Powerlaw+QSO'):    return 'PL+QSO',    'purple'
+            elif best.startswith('Powerlaw+Lines'):  return 'PL+Lines',  'cyan'
+            elif best == 'Galaxy':                   return 'Galaxy',     'green'
+            elif best == 'QSO':                      return 'QSO',        'blue'
+            else:                                    return 'Other',      'gray'
         elif color_by == 'fermi_class':
             fc = m['fermi_class'].lower()
-            if fc == 'bll':   return 'BL Lac',  'steelblue'
+            if fc == 'bll':    return 'BL Lac', 'steelblue'
             elif fc == 'fsrq': return 'FSRQ',   'tomato'
             elif fc == 'bcu':  return 'BCU',    'goldenrod'
             else:              return fc,        'gray'
         return 'Unknown', 'gray'
 
-    # Extract data
     x_vals, y_vals, labels, colors_list = [], [], [], []
     for res in results_list:
         x = extract(res, x_param)
         y = extract(res, y_param)
         if np.isfinite(x) and np.isfinite(y):
             lab, col = get_color_label(res)
-            x_vals.append(x)
-            y_vals.append(y)
-            labels.append(lab)
-            colors_list.append(col)
+            x_vals.append(x); y_vals.append(y)
+            labels.append(lab); colors_list.append(col)
 
     x_vals = np.array(x_vals)
     y_vals = np.array(y_vals)
 
-    # Axis labels
     axis_labels = {
-        'z_best':      'Redshift $z$',
-        'jet_frac':    'Jet fraction',
-        'pl_alpha':    r'Power-law slope $\alpha$',
-        'pl_delta':    r'Power-law curvature $\delta$',
-        'aicc_margin': r'$\Delta$AICc margin',
-        'sn':          'S/N',
+        'z_best': 'Redshift z', 'jet_frac': 'Jet fraction',
+        'pl_alpha': 'PL slope alpha', 'pl_delta': 'PL curvature delta',
+        'aicc_margin': 'AICc margin', 'sn': 'S/N',
     }
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
-    # Left — scatter plot
     ax = axes[0]
     seen = set()
     for x, y, lab, col in zip(x_vals, y_vals, labels, colors_list):
@@ -1479,16 +1390,14 @@ def plot_population(results_list,
     ax.set_xlabel(axis_labels.get(x_param, x_param), fontsize=12)
     ax.set_ylabel(axis_labels.get(y_param, y_param), fontsize=12)
     ax.set_title(f'{axis_labels.get(y_param, y_param)} vs '
-                 f'{axis_labels.get(x_param, x_param)}\n'
-                 f'(N={len(x_vals)})', fontsize=12, fontweight='bold')
-    ax.legend(fontsize=9, framealpha=0.9)
+                 f'{axis_labels.get(x_param, x_param)} (N={len(x_vals)})',
+                 fontsize=12, fontweight='bold')
+    ax.legend(fontsize=9)
     ax.grid(alpha=0.3)
 
-    # Right — distributions
     ax2 = axes[1]
-    unique_labels = list(dict.fromkeys(labels))
-    unique_colors = {lab: col for lab, col in zip(labels, colors_list)}
-
+    unique_labels  = list(dict.fromkeys(labels))
+    unique_colors  = {lab: col for lab, col in zip(labels, colors_list)}
     for lab in unique_labels:
         mask = np.array(labels) == lab
         ax2.hist(y_vals[mask], bins=20, alpha=0.5,
@@ -1517,21 +1426,23 @@ def plot_population(results_list,
 
 def plot_ew_summary(results, min_snr=3.0, save_dir=None):
     """
-    Bar chart of all detected equivalent width measurements for a source.
+    Scatter plot of detected equivalent widths with S/N labels.
 
-    Emission lines shown as negative bars (blue), absorption lines as
-    positive bars (green). The 5 Å BL Lac/FSRQ boundary is marked.
+    Emission lines shown in blue, absorption lines in green.
+    The 5 A BL Lac/FSRQ boundary is marked with a red dashed line.
+    Log scale y-axis for clarity across a wide dynamic range.
 
     Parameters
     ----------
-    results  : dict — output of RedshiftResultsCache.load_object_results()
-    min_snr  : float — minimum S/N to include (default 3.0)
-    save_dir : str or None — save as PDF if provided
+    results  : dict - output of RedshiftResultsCache.load_object_results()
+    min_snr  : float - minimum S/N threshold (default 3.0)
+    save_dir : str or None
 
     Returns
     -------
     fig : matplotlib Figure
     """
+    import pandas as pd
     meta  = results['metadata']
     spec  = results['spectrum']
     lmfit = results['lmfit_results']
@@ -1541,61 +1452,64 @@ def plot_ew_summary(results, min_snr=3.0, save_dir=None):
         spec['common_wave'], spec['flux_resamp'],
         spec['err_resamp'], spec['fit_mask'], z)
 
-    # Filter to detected lines
-    detected = [
-        (name, ew, ew_err, snr, ltype)
+    emission_det = [
+        (name, abs(ew), snr)
         for name, obs, ew, ew_err, snr, det, ltype, window in results_ew
-        if det and snr >= min_snr and np.isfinite(ew)
+        if det and snr >= min_snr and np.isfinite(ew) and ltype == 'emission'
+    ]
+    absorption_det = [
+        (name, abs(ew), snr)
+        for name, obs, ew, ew_err, snr, det, ltype, window in results_ew
+        if det and snr >= min_snr and np.isfinite(ew) and ltype == 'absorption'
     ]
 
-    if not detected:
+    all_det = emission_det + absorption_det
+    if not all_det:
         print(f"No lines detected above S/N={min_snr} for SDSS_ID {meta['SDSS_ID']}")
         return None
 
-    names    = [d[0] for d in detected]
-    ews      = np.array([d[1] for d in detected])
-    ew_errs  = np.array([d[2] for d in detected])
-    ltypes   = [d[4] for d in detected]
-    colors   = ['steelblue' if lt == 'emission' else 'forestgreen'
-                for lt in ltypes]
+    colors = {'Emission': 'steelblue', 'Absorption': 'forestgreen'}
 
-    fig, ax = plt.subplots(figsize=(max(8, len(names) * 0.9), 5))
+    fig, ax = plt.subplots(figsize=(max(8, len(all_det) * 1.2), 6))
 
-    bars = ax.bar(names, ews, color=colors, alpha=0.75,
-                  edgecolor='black', linewidth=0.8)
-    ax.errorbar(names, ews, yerr=ew_errs,
-                fmt='none', color='black', capsize=4, lw=1.5)
+    for i, (name, ew, snr) in enumerate(all_det):
+        ltype = 'Emission' if (name, ew, snr) in emission_det else 'Absorption'
+        color = colors[ltype]
+        pos   = i + 1
 
-    # BL Lac / FSRQ boundary
-    ax.axhline( 5, color='red', ls='--', lw=1.5, alpha=0.8,
-                label='|EW| = 5 Å boundary')
-    ax.axhline(-5, color='red', ls='--', lw=1.5, alpha=0.8)
-    ax.axhline(0,  color='gray', ls='-',  lw=1.0, alpha=0.5)
+        ax.scatter(pos, ew, color=color, s=140, zorder=5,
+                   edgecolors='black', linewidths=1.2)
+        ax.text(pos, ew * 1.2, f'S/N={snr:.1f}',
+                ha='center', va='bottom', fontsize=8,
+                color='black', fontweight='bold')
 
-    # S/N labels on bars
-    for bar, (name, ew, ew_err, snr, ltype) in zip(bars, detected):
-        ax.text(bar.get_x() + bar.get_width()/2,
-                ew + np.sign(ew) * (abs(ew_err) + 0.3),
-                f'S/N={snr:.1f}', ha='center', va='bottom'
-                if ew > 0 else 'top', fontsize=7, color='black')
+    ax.axhline(5, color='red', ls='--', lw=2, alpha=0.8,
+               label='|EW| = 5 A (BL Lac / FSRQ boundary)')
+    ax.axhline(0, color='gray', ls='-', lw=0.8, alpha=0.4)
 
-    # Legend
     from matplotlib.patches import Patch
     legend_elements = [
-        Patch(facecolor='steelblue',   alpha=0.75, label='Emission'),
-        Patch(facecolor='forestgreen', alpha=0.75, label='Absorption'),
-        plt.Line2D([0], [0], color='red', ls='--', lw=1.5,
-                   label='|EW| = 5 Å'),
+        Patch(facecolor='steelblue',   edgecolor='black', alpha=0.8, label='Emission'),
+        Patch(facecolor='forestgreen', edgecolor='black', alpha=0.8, label='Absorption'),
+        plt.Line2D([0], [0], color='red', ls='--', lw=2, label='|EW| = 5 A'),
     ]
-    ax.legend(handles=legend_elements, fontsize=9)
+    ax.legend(handles=legend_elements, fontsize=10, framealpha=0.95)
 
-    ax.set_ylabel('Equivalent Width (Å)\n(+ve = absorption, −ve = emission)',
-                  fontsize=11)
-    ax.set_title(f'Detected spectral lines — SDSS_ID {meta["SDSS_ID"]} '
-                 f'(z={z:.4f})\n{lmfit["best_label"]}',
-                 fontsize=12, fontweight='bold')
-    ax.tick_params(axis='x', rotation=35)
-    ax.grid(alpha=0.3, axis='y')
+    all_names = [r[0] for r in all_det]
+    ax.set_xticks(range(1, len(all_det) + 1))
+    ax.set_xticklabels(all_names, fontsize=10, fontweight='bold',
+                        rotation=30, ha='right')
+    ax.set_ylabel('|Equivalent Width| (A)', fontsize=12, fontweight='bold')
+    ax.set_title(
+        f'Detected spectral lines - SDSS_ID {meta["SDSS_ID"]} (z={z:.4f})\n'
+        f'{lmfit["best_label"]} | S/N threshold = {min_snr}',
+        fontsize=12, fontweight='bold')
+    ax.grid(alpha=0.3, axis='y', linestyle='--')
+    ax.tick_params(labelsize=10, direction='in', top=True, right=True)
+    ax.set_yscale('log')
+
+    all_ews = [r[1] for r in all_det]
+    ax.set_ylim(0.5, max(all_ews) * 4)
 
     plt.tight_layout()
 
