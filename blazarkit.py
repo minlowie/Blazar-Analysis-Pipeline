@@ -618,14 +618,29 @@ def plot_from_cache(results, model, save_dir=None,
         ('fit_linepl', 'cyan',   1.2, {},           'Powerlaw+Lines'),
         ('fit_galpl',  'r',      3.0, {},           'Powerlaw+Galaxy'),
     ]
+    key_to_family = {
+        'fit_gal'    : 'Galaxy',
+        'fit_qso'    : 'QSO',
+        'fit_pl'     : 'Powerlaw',
+        'fit_galpl'  : 'Powerlaw+Galaxy',
+        'fit_qsopl'  : 'Powerlaw+QSO',
+        'fit_linepl' : 'Powerlaw+Lines',
+    }
+
     for key, color, lw, kwargs, label in fit_curves:
         if model == 'best':
-            clean_label = label.replace(' Fit', '')
-            if not best_label.startswith(clean_label):
+            family = key_to_family.get(key, '')
+            # Exact match — Powerlaw only shows when best_label IS Powerlaw
+            # Powerlaw+Galaxy shows when best_label starts with Powerlaw+Galaxy etc.
+            if family == 'Powerlaw':
+                if best_label != 'Powerlaw':
+                    continue
+            elif not best_label.startswith(family):
                 continue
         elif isinstance(model, list):
             if label not in model and label.replace(' Fit','') not in model:
                 continue
+        # model == 'all' — show everything
         fd = fit_data.get(key)
         if fd is not None and fd.get('best_fit') is not None:
             axs2[0].plot(x_fit, fd['best_fit'], color=color, lw=lw,
@@ -770,18 +785,20 @@ def plot_from_cache(results, model, save_dir=None,
 
     # Residuals
     if show_residuals and len(axs2) > 1:
-     if best_params is not None and best_params['best_fit'] is not None:
-        resi = (spec['y_fit'] - best_params['best_fit']) / spec['e_fit']
-        axs2[1].plot(x_fit, resi, color='purple', lw=1,
-                     label='Normalized residuals')
-        axs2[1].axhline(0, color='gray', ls='--', lw=1)
-        axs2[1].fill_between(x_fit, -3, 3, color='gray', alpha=0.2,
-                              label=r'$\pm3\sigma$')
-    axs2[1].set_ylim(-5, 5)
-    axs2[1].set_xlabel(r'Wavelength [Å]', fontsize=12, fontweight='bold')
-    axs2[1].set_ylabel(r'Residual ($\sigma$)', fontsize=12, fontweight='bold')
-    axs2[1].legend(fontsize=10)
-    axs2[1].grid(alpha=0.3)
+        if best_params is not None and best_params['best_fit'] is not None:
+            resi = (spec['y_fit'] - best_params['best_fit']) / spec['e_fit']
+            axs2[1].plot(x_fit, resi, color='purple', lw=1,
+                         label='Normalized residuals')
+            axs2[1].axhline(0, color='gray', ls='--', lw=1)
+            axs2[1].fill_between(x_fit, -3, 3, color='gray', alpha=0.2,
+                                  label=r'$\pm3\sigma$')
+        axs2[1].set_ylim(-5, 5)
+        axs2[1].set_xlabel(r'Wavelength [A]', fontsize=12, fontweight='bold')
+        axs2[1].set_ylabel(r'Residual (sigma)', fontsize=12, fontweight='bold')
+        axs2[1].legend(fontsize=10)
+        axs2[1].grid(alpha=0.3)
+    else:
+        axs2[0].set_xlabel(r'Wavelength [A]', fontsize=12, fontweight='bold')
 
     plt.tight_layout()
     plt.show()
