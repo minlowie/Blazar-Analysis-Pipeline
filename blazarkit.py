@@ -627,20 +627,43 @@ def plot_from_cache(results, model, save_dir=None,
         'fit_linepl' : 'Powerlaw+Lines',
     }
 
+    def _is_best_model(key, best_label, key_to_family):
+        """Check if this key corresponds to the best-fit model."""
+        family = key_to_family.get(key, '')
+        if family == 'Powerlaw':
+            return best_label == 'Powerlaw'
+        return best_label.startswith(family)
+
     for key, color, lw, kwargs, label in fit_curves:
+        family = key_to_family.get(key, '')
+
         if model == 'best':
-            family = key_to_family.get(key, '')
-            # Exact match — Powerlaw only shows when best_label IS Powerlaw
-            # Powerlaw+Galaxy shows when best_label starts with Powerlaw+Galaxy etc.
-            if family == 'Powerlaw':
-                if best_label != 'Powerlaw':
-                    continue
-            elif not best_label.startswith(family):
+            # Show only the exact best-fit model
+            if not _is_best_model(key, best_label, key_to_family):
                 continue
+
+        elif model == 'all':
+            # Show everything — no filter
+            pass
+
         elif isinstance(model, list):
-            if label not in model and label.replace(' Fit','') not in model:
+            # List can contain: 'best', model family names, or label strings
+            show = False
+            for m in model:
+                if m == 'best':
+                    # 'best' in list means: include the best-fit model
+                    if _is_best_model(key, best_label, key_to_family):
+                        show = True
+                elif label == m or label.replace(' Fit', '') == m or family == m:
+                    show = True
+            if not show:
                 continue
-        # model == 'all' — show everything
+
+        else:
+            # Single string model name e.g. model='Powerlaw+Galaxy'
+            if label != model and label.replace(' Fit', '') != model and family != model:
+                continue
+
         fd = fit_data.get(key)
         if fd is not None and fd.get('best_fit') is not None:
             axs2[0].plot(x_fit, fd['best_fit'], color=color, lw=lw,
