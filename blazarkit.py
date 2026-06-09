@@ -958,13 +958,13 @@ def bz_compare(object_list, cache, final_bl,
         comp      = results['components']
 
         row_match  = final_bl[final_bl['SDSS_ID'] == sdss_id]
-        fhl_class  = row_match['CLASS1'][0]       if len(row_match) > 0 else "N/A"
+        fhl_class  = row_match['FGL_CLASS'][0]    if len(row_match) > 0 else "N/A"
         sdss_name  = row_match['SDSS_NAME'][0]    if len(row_match) > 0 else "N/A"
-        daic       = row_match['aicc_margin'][0]  if len(row_match) > 0 else np.nan
-        RCHI       = row_match['RCHI2'][0]        if len(row_match) > 0 else np.nan
-        sn         = row_match['SN_MEDIAN_ALL'][0]if len(row_match) > 0 else np.nan
-        lm_rchi    = row_match['R_lm_chi'][0]     if len(row_match) > 0 else np.nan
-        fhl_z      = row_match['fhl_z'][0]        if len(row_match) > 0 else np.nan
+        daic       = np.nan
+        RCHI       = row_match['rchi2_sdss'][0]   if len(row_match) > 0 else np.nan
+        sn         = row_match['SNR'][0]          if len(row_match) > 0 else np.nan
+        lm_rchi    = row_match['rchi2_fit'][0]    if len(row_match) > 0 else np.nan
+        fhl_z      = row_match['Z_SDSS'][0]       if len(row_match) > 0 else np.nan
 
         z_best     = lmfit_res['z_best']
         z_sdss     = meta['z_sdss']
@@ -1164,8 +1164,7 @@ def bz_compare(object_list, cache, final_bl,
             f"({panel_labels[idx]}) {sdss_name} | {fhl_class} | "
             f"SDSS: {obj_class} (z={z_sdss_str}) | fhl_z={fhl_z:.3f}\n"
             f"Best: {best_label} | z_fit={z_best:.3f}{z_err_str} | "
-            f"χ²_r SDSS={RCHI:.2f} lmfit={lm_rchi:.2f} | "
-            f"ΔAICc={daic:.1f} | S/N={sn:.1f}",
+            f"χ²_r SDSS={RCHI:.2f} lmfit={lm_rchi:.2f} | S/N={sn:.1f}",
             fontsize=11, fontweight='bold', pad=2)
 
         ax_spec.set_ylabel(r'Flux [$10^{-17}$ erg/s/cm$^2$/Å]',
