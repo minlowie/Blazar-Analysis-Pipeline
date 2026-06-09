@@ -60,17 +60,27 @@ pip install numpy matplotlib astropy scipy
 
 ## Getting the data
 
-blazarkit works with pre-computed cache files. You need two things:
+### Cache
 
-### 1. The cache
+The pre-computed spectral fitting results cache will be publicly available on
+Zenodo upon publication of SDSS-V DR20.
 
-Download the cache from Zenodo:
+**Two datasets will be available:**
 
-> **DOI: to be added upon publication**
+- **Main sample** (707 sources — primary science results)
+- **Multiple-epoch sample** (966 observations — variability/changing-look analysis)
 
-The cache contains one file per source in the format `obj_{SDSS_ID}_{MJD}.pkl.gz`. Place the downloaded folder in a location of your choice and note the path.
+In the meantime, access is available upon request:
 
-### 2. The VAC table (optional)
+> Contact **Mohammed Nlowie Iddrisu** at m.i.nlowie@sms.ed.ac.uk
+
+Once you have the cache, point `NAKBlaZarCache` to your local folder:
+
+```python
+cache = NAKBlaZarCache(cache_dir='/path/to/your/cache')
+```
+
+### The VAC table (optional)
 
 The Value-Added Catalogue (VAC) is available through the SDSS Science Archive Server (SAS):
 
@@ -84,17 +94,16 @@ The VAC contains the full sample of 707 blazar candidates with their classificat
 ## Quick start
 
 ```python
-from blazarkit import RedshiftResultsCache, plot_from_cache
+from blazarkit import NAKBlaZarCache, bz_inspect
 
-# Point to your downloaded cache folder
-cache = RedshiftResultsCache(cache_dir='/path/to/SDSS-V_Fermi_Blazars_Cache')
+# Point to your local cache folder
+cache = NAKBlaZarCache(cache_dir='/path/to/your/cache')
 
 # Load a source by SDSS_ID and MJD
-# (find these in the VAC table or from the cache filenames)
-results = cache.load_object_results('20570296', mjd=60027)
+results = cache.load('20570296', mjd=60027)
 
-# Plot spectrum with best model (model is required)
-fig1, fig2 = plot_from_cache(results, model='best')
+# Plot spectrum with best model
+fig1, fig2 = bz_inspect(results, model='best')
 ```
 
 ---
@@ -110,47 +119,47 @@ fig1, fig2 = plot_from_cache(results, model='best')
 ## Usage examples
 
 ```python
-from blazarkit import RedshiftResultsCache, plot_from_cache, normalize_shape
+from blazarkit import NAKBlaZarCache, bz_inspect, normalize_shape
 
-cache = RedshiftResultsCache(cache_dir='/path/to/SDSS-V_Fermi_Blazars_Cache')
-results = cache.load_object_results('20570296', mjd=60027)
+cache = NAKBlaZarCache(cache_dir='/path/to/SDSS-V_Fermi_Blazars_Cache')
+results = cache.load('20570296', mjd=60027)
 
 # Best model only — spectrum only (model is required)
-fig1, fig2 = plot_from_cache(results, model='best')
+fig1, fig2 = bz_inspect(results, model='best')
 
 # All model fits overlaid
-fig1, fig2 = plot_from_cache(results, model='all')
+fig1, fig2 = bz_inspect(results, model='all')
 
 # Specific models only
-fig1, fig2 = plot_from_cache(results, model=['best', 'Powerlaw+Galaxy', 'Powerlaw+QSO'])
+fig1, fig2 = bz_inspect(results, model=['best', 'Powerlaw+Galaxy', 'Powerlaw+QSO'])
 
 # Also show chi2/p(z) figure
-fig1, fig2 = plot_from_cache(results, model='best', show_fig1=True)
+fig1, fig2 = bz_inspect(results, model='best', show_fig1=True)
 
 # Minimal clean plot
-fig1, fig2 = plot_from_cache(results, model='best',
+fig1, fig2 = bz_inspect(results, model='best',
                               show_inset=False,
                               show_line_markers=False,
                               show_residuals=False)
 
 # Zoom into a specific wavelength range
-fig1, fig2 = plot_from_cache(results, model='best', wavelength_range=(4000, 7000))
+fig1, fig2 = bz_inspect(results, model='best', wavelength_range=(4000, 7000))
 
 # Override y-axis limits
-fig1, fig2 = plot_from_cache(results, model='best', ylim=(-2, 30))
+fig1, fig2 = bz_inspect(results, model='best', ylim=(-2, 30))
 
 # Save to PDF
-fig1, fig2 = plot_from_cache(results, model='best', save_dir='my_plots')
+fig1, fig2 = bz_inspect(results, model='best', save_dir='my_plots')
 ```
 
 ---
 
 ## Function reference
 
-### `plot_from_cache`
+### `bz_inspect`
 
 ```python
-plot_from_cache(results, model,
+bz_inspect(results, model,
                 save_dir=None,
                 show_fig1=False,
                 show_fig2=True,
@@ -165,7 +174,7 @@ plot_from_cache(results, model,
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `results` | — | Dict from `cache.load_object_results()` |
+| `results` | — | Dict from `cache.load()` |
 | `save_dir` | `None` | Directory to save PDF; if None, not saved |
 | `model` | required | `'best'`, `'all'`, or list e.g. `['Powerlaw+Galaxy', 'Powerlaw+QSO']` |
 | `show_fig1` | `False` | Show χ²(z) and p(z) diagnostic figure |
@@ -181,28 +190,28 @@ plot_from_cache(results, model,
 
 ---
 
-### `RedshiftResultsCache`
+### `NAKBlaZarCache`
 
 ```python
-# Initialise
-cache = RedshiftResultsCache(cache_dir='path/to/cache')
+# Initialise with your local cache folder
+cache = NAKBlaZarCache(cache_dir='/path/to/your/cache')
 
 # Load a source
-results = cache.load_object_results(sdss_id, mjd=mjd)
+results = cache.load(sdss_id, mjd=mjd)
 
-# Check if a source exists
+# Check if a source exists locally
 cache.exists(sdss_id, mjd=mjd)
 
-# List all cached sources
+# List locally cached sources
 cache.list_cached_objects()
 ```
 
 ---
 
-### `compute_EW_for_all_lines`
+### `measure_ew`
 
 ```python
-results_ew = compute_EW_for_all_lines(wave, flux, err, fit_mask, z)
+results_ew = measure_ew(wave, flux, err, fit_mask, z)
 ```
 
 Returns a list of tuples `(name, obs_wave, ew, ew_err, snr, detected, ltype, window)` for 16 spectral features. Detected if `S/N >= 3`.
@@ -230,30 +239,30 @@ Returns a list of `(z, relative_height)` tuples for all peaks in the global p(z)
 
 ---
 
-### `classification_summary`
+### `bz_classify`
 
 ```python
-summary = classification_summary(results)
+summary = bz_classify(results)
 ```
 
 Prints and returns a one-line description of the classification of a source — blazar class, jet fraction, S/N, and key detected spectral lines.
 
 ---
 
-### `plot_ew_summary`
+### `bz_lines`
 
 ```python
-fig = plot_ew_summary(results, min_snr=3.0, save_dir=None)
+fig = bz_lines(results, min_snr=3.0, save_dir=None)
 ```
 
 Bar chart of all detected equivalent width measurements. Blue = emission, green = absorption. The |EW| = 5 Å BL Lac/FSRQ boundary is marked. S/N values are labelled on each bar.
 
 ---
 
-### `compare_epochs`
+### `bz_epochs`
 
 ```python
-fig = compare_epochs(sdss_id, mjd_list, cache,
+fig = bz_epochs(sdss_id, mjd_list, cache,
                      wavelength_range=(3600, 10400),
                      show_model=True,
                      save_dir=None)
@@ -265,17 +274,17 @@ Overlays spectra from multiple observations of the same source, coloured from da
 |-----------|-------------|
 | `sdss_id` | SDSS_ID of the source |
 | `mjd_list` | List of MJD integers to compare |
-| `cache` | RedshiftResultsCache instance |
+| `cache` | NAKBlaZarCache instance |
 | `wavelength_range` | Wavelength range in Å |
 | `show_model` | Overlay best-fit model per epoch |
 | `save_dir` | Save as PDF if provided |
 
 ---
 
-### `plot_population`
+### `bz_population`
 
 ```python
-fig = plot_population(results_list,
+fig = bz_population(results_list,
                       x_param='z_best',
                       y_param='jet_frac',
                       color_by='best_label',
@@ -296,13 +305,13 @@ Population-level scatter plot and distribution from a list of cached results.
 results_list = []
 for fname in sorted(cache.list_cached_objects()):
     parts   = fname.replace('.pkl.gz', '').split('_')
-    results_list.append(cache.load_object_results(parts[1], mjd=int(parts[2])))
+    results_list.append(cache.load(parts[1], mjd=int(parts[2])))
 
 # Jet fraction vs redshift
-fig = plot_population(results_list, x_param='z_best', y_param='jet_frac')
+fig = bz_population(results_list, x_param='z_best', y_param='jet_frac')
 
 # PL alpha vs jet fraction coloured by Fermi class
-fig = plot_population(results_list, x_param='pl_alpha', y_param='jet_frac',
+fig = bz_population(results_list, x_param='pl_alpha', y_param='jet_frac',
                       color_by='fermi_class')
 ```
 
@@ -351,23 +360,55 @@ Check that your cache directory path is correct and the file exists in the forma
 Add `%matplotlib inline` at the top of your notebook.
 
 **Zoom insets not appearing**
-Insets only appear for lines detected at the required S/N. Ca II H&K requires S/N >= 5; Mg II and H-alpha require S/N >= 3. Run `compute_EW_for_all_lines` to check detected lines.
+Insets only appear for lines detected at the required S/N. Ca II H&K requires S/N >= 5; Mg II and H-alpha require S/N >= 3. Run `measure_ew` to check detected lines.
 
 **Windows path issues**
 Use forward slashes or raw strings for paths:
 ```python
-cache = RedshiftResultsCache(cache_dir=r'C:\Users\name\Downloads\SDSS-V_Fermi_Blazars_Cache')
+cache = NAKBlaZarCache(cache_dir=r'C:\Users\name\Downloads\SDSS-V_Fermi_Blazars_Cache')
 ```
 
 ---
 
 ## Citation
 
-If you use blazarkit or the associated data, please cite:
+### Paper
+If you use any results from this work, please cite:
 
 ```
-Nlowie et al. (in prep.) — Optical Spectroscopic Analysis of Fermi Detected Blazars using SDSS-V
+Nlowie et al. (in prep.) — Optical Spectroscopic Analysis of Fermi Detected
+Blazars using SDSS-V. MNRAS.
 ```
+
+### Code
+If you use blazarkit to visualise or analyse the pre-computed results, please also cite:
+
+```
+Nlowie et al. (2025) — blazarkit: Plotting and analysis utilities for
+Fermi/SDSS-V blazar spectral fitting. Zenodo. doi:10.5281/zenodo.XXXXXXX
+```
+
+> Note: blazarkit is a visualisation and analysis tool for the pre-computed
+> spectral fitting results. It does not include the fitting pipeline itself.
+> To reproduce or extend the fitting, please contact the authors.
+
+### Data
+If you use the pre-computed spectral fitting results (cache files), please also cite:
+
+**Main sample (707 sources):**
+```
+Nlowie et al. (2025) — Fermi/SDSS-V Blazar Spectral Fitting Results:
+Main Sample. Zenodo. doi:10.5281/zenodo.YYYYYYY
+```
+
+**Multiple-match sample (966 observations, for variability analysis):**
+```
+Nlowie et al. (2025) — Fermi/SDSS-V Blazar Spectral Fitting Results:
+Multiple-Epoch Sample. Zenodo. doi:10.5281/zenodo.ZZZZZZZ
+```
+
+> All DOIs will be confirmed and updated upon publication of SDSS-V DR20.
+> In the meantime, contact m.i.nlowie@sms.ed.ac.uk for data access.
 
 ---
 

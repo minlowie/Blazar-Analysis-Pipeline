@@ -8,12 +8,12 @@ all diagnostic plots without re-running the fitting pipeline.
 
 Usage
 -----
-    from blazarkit import RedshiftResultsCache, plot_from_cache
-    from blazarkit import plot_multi_object_comparison_single
+    from blazarkit import NAKBlaZarCache, bz_inspect
+    from blazarkit import bz_compare
 
-    cache   = RedshiftResultsCache(cache_dir="Fits_with_Native_resampling_cache")
-    results = cache.load_object_results("79336239", mjd=59955)
-    plot_from_cache(results)
+    cache   = NAKBlaZarCache(cache_dir="Fits_with_Native_resampling_cache")
+    results = cache.load("79336239", mjd=59955)
+    bz_inspect(results)
 
 Requirements
 ------------
@@ -65,7 +65,7 @@ ABSORPTION_LINES = {
 
 
 # -- Cache system --------------------------------------------------------------
-class RedshiftResultsCache:
+class NAKBlaZarCache:
     """
     Load and save spectral fitting results cached as compressed pickle files.
 
@@ -73,7 +73,7 @@ class RedshiftResultsCache:
     obj_{SDSS_ID}_{MJD}.pkl.gz in the cache directory.
     """
 
-    def __init__(self, cache_dir="Fits_with_Native_resampling_cache"):
+    def __init__(self, cache_dir="blazar_cache"):
         self.cache_dir = cache_dir
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir, exist_ok=True)
@@ -91,19 +91,67 @@ class RedshiftResultsCache:
         print(f"Saved: {os.path.basename(filepath)}")
         return filepath
 
-    def load_object_results(self, sdss_id, mjd=None):
+    # Zenodo base URL — replace XXXXXXX with real record ID upon publication
+    ZENODO_BASE_URL = "https://zenodo.org/record/XXXXXXX/files"
+
+    def _fetch_from_zenodo(self, sdss_id, mjd=None):
+        """Stream a single source file from Zenodo and save locally."""
+        import urllib.request
+        filename = f"obj_{sdss_id}_{mjd}.pkl.gz" if mjd is not None \
+                   else f"obj_{sdss_id}.pkl.gz"
+        url = f"{self.ZENODO_BASE_URL}/{filename}"
+        print(f"  Fetching {filename} from Zenodo...")
+        try:
+            with urllib.request.urlopen(url, timeout=30) as response:
+                data = response.read()
+            filepath = self._get_object_path(sdss_id, mjd)
+            with open(filepath, 'wb') as f:
+                f.write(data)
+            print(f"  Saved locally: {os.path.basename(filepath)}")
+        except Exception as e:
+            raise FileNotFoundError(
+                f"Could not fetch SDSS_ID={sdss_id} MJD={mjd}.\n"
+                f"Check the SDSS_ID and MJD are correct.\n"
+                f"Error: {e}"
+            )
+
+    def load(self, sdss_id, mjd=None):
+        """
+        Load results for a source.
+
+        Checks local cache first. If not found locally, streams from
+        Zenodo and saves locally so all future calls are instant.
+
+        Parameters
+        ----------
+        sdss_id : str - SDSS_ID of the source
+        mjd     : int or None - MJD of the observation
+
+        Returns
+        -------
+        results : dict
+        """
         filepath = self._get_object_path(sdss_id, mjd)
+
         if not os.path.exists(filepath):
-            raise FileNotFoundError(f"No cache found: {filepath}")
+            raise FileNotFoundError(
+                f"\nSource not found locally.\n"
+                f"The cache is currently available upon request.\n"
+                f"Contact: m.i.nlowie@sms.ed.ac.uk\n"
+                f"After downloading, point NAKBlaZarCache to your local folder:\n"
+                f"  cache = NAKBlaZarCache(cache_dir='/path/to/your/cache')\n"
+                f"SDSS_ID={sdss_id}, MJD={mjd}"
+            )
+
         try:
             with gzip.open(filepath, 'rb') as f:
                 results = pickle.load(f)
         except gzip.BadGzipFile:
             with open(filepath, 'rb') as f:
                 results = pickle.load(f)
+
         print(f"Loaded: {os.path.basename(filepath)}")
         return results
-
     def exists(self, sdss_id, mjd=None):
         return os.path.exists(self._get_object_path(sdss_id, mjd))
 
@@ -229,7 +277,7 @@ def measure_equivalent_width_hybrid_normalized(
     return best_ew, best_ew_err, best_snr, best_detected, best_window
 
 
-def compute_EW_for_all_lines(wave, flux, err, fit_mask, z):
+def measure_ew(wave, flux, err, fit_mask, z):
     """Compute EW for all emission and absorption lines at redshift z."""
     results_ew = []
     all_lines  = ([(name, rest, 'emission')   for name, rest in EMISSION_LINES.items()] +
@@ -401,7 +449,7 @@ def get_redshift_peaks(pz_total, z_grid, min_height=0.05):
 
 # -- Main plot function ----------------------------------------------------------
 
-def plot_from_cache(results, model, save_dir=None,
+def bz_inspect(results, model, save_dir=None,
                     show_fig1=False,
                     show_fig2=True,
                     show_inset=True,
@@ -416,7 +464,7 @@ def plot_from_cache(results, model, save_dir=None,
 
     Parameters
     ----------
-    results              : dict - output of RedshiftResultsCache.load_object_results()
+    results              : dict - output of NAKBlaZarCache.load()
     save_dir             : str or None - saves spectral plot as PDF if provided
     show_fig1            : bool - show chi2(z) and p(z) figure (default False)
     show_fig2            : bool - show best-fit spectrum figure (default True)
@@ -436,11 +484,11 @@ def plot_from_cache(results, model, save_dir=None,
 
     Examples
     --------
-    fig1, fig2 = plot_from_cache(results)
-    fig1, fig2 = plot_from_cache(results, show_fig1=True)
-    fig1, fig2 = plot_from_cache(results, model='all')
-    fig1, fig2 = plot_from_cache(results, wavelength_range=(4000, 7000))
-    fig1, fig2 = plot_from_cache(results, ylim=(-2, 30))
+    fig1, fig2 = bz_inspect(results)
+    fig1, fig2 = bz_inspect(results, show_fig1=True)
+    fig1, fig2 = bz_inspect(results, model='all')
+    fig1, fig2 = bz_inspect(results, wavelength_range=(4000, 7000))
+    fig1, fig2 = bz_inspect(results, ylim=(-2, 30))
     """
     meta   = results['metadata']
     spec   = results['spectrum']
@@ -693,7 +741,7 @@ def plot_from_cache(results, model, save_dir=None,
     axs2[0].set_xlim(wave_min, wave_max)
 
     # Line markers - must come before zoom insets
-    results_ew = compute_EW_for_all_lines(
+    results_ew = measure_ew(
         common_wave, flux_resamp, err_resamp, fit_mask, z_best)
     for name, obs, ew, ew_err, snr, detected, ltype, window in results_ew:
         if detected:
@@ -849,7 +897,7 @@ def plot_from_cache(results, model, save_dir=None,
 
 # -- Multi-object comparison plot ----------------------------------------------
 
-def plot_multi_object_comparison_single(object_list, cache, final_bl,
+def bz_compare(object_list, cache, final_bl,
                                         n_cols=2, save_dir="paper_plots"):
     """
     Create a multi-panel comparison plot for a list of sources.
@@ -857,7 +905,7 @@ def plot_multi_object_comparison_single(object_list, cache, final_bl,
     Parameters
     ----------
     object_list : list of dicts with keys 'SDSS_ID' and optionally 'MJD'
-    cache       : RedshiftResultsCache instance
+    cache       : NAKBlaZarCache instance
     final_bl    : astropy Table - the main blazar sample table
     n_cols      : int - number of columns in the grid
     save_dir    : str - directory to save the output PDF
@@ -899,7 +947,7 @@ def plot_multi_object_comparison_single(object_list, cache, final_bl,
         mjd     = obj.get('MJD', None)
 
         try:
-            results = cache.load_object_results(str(sdss_id), mjd)
+            results = cache.load(str(sdss_id), mjd)
         except Exception as e:
             print(f"  Failed to load {sdss_id}: {e}")
             continue
@@ -1163,13 +1211,13 @@ def plot_multi_object_comparison_single(object_list, cache, final_bl,
 
 # -- New utility functions ------------------------------------------------------
 
-def classification_summary(results):
+def bz_classify(results):
     """
     Print a one-line human-readable classification summary for a source.
 
     Parameters
     ----------
-    results : dict - output of RedshiftResultsCache.load_object_results()
+    results : dict - output of NAKBlaZarCache.load()
 
     Returns
     -------
@@ -1208,7 +1256,7 @@ def classification_summary(results):
     elif best == 'Powerlaw':
         jet_str = 'Featureless jet continuum | No host detected'
 
-    results_ew = compute_EW_for_all_lines(
+    results_ew = measure_ew(
         spec['common_wave'], spec['flux_resamp'],
         spec['err_resamp'], spec['fit_mask'], z)
     detected_lines = [
@@ -1230,7 +1278,7 @@ def classification_summary(results):
     return summary
 
 
-def compare_epochs(sdss_id, mjd_list, cache,
+def bz_epochs(sdss_id, mjd_list, cache,
                    wavelength_range=(3600, 10400),
                    show_model=True,
                    save_dir=None):
@@ -1241,7 +1289,7 @@ def compare_epochs(sdss_id, mjd_list, cache,
     ----------
     sdss_id          : str
     mjd_list         : list of int
-    cache            : RedshiftResultsCache instance
+    cache            : NAKBlaZarCache instance
     wavelength_range : tuple (wave_min, wave_max)
     show_model       : bool - overlay best-fit model
     save_dir         : str or None
@@ -1260,7 +1308,7 @@ def compare_epochs(sdss_id, mjd_list, cache,
     epoch_data = []
     for j, mjd in enumerate(sorted(mjd_list)):
         try:
-            res   = cache.load_object_results(str(sdss_id), mjd=mjd)
+            res   = cache.load(str(sdss_id), mjd=mjd)
             spec  = res['spectrum']
             lmfit = res['lmfit_results']
             comp  = res['components']
@@ -1349,14 +1397,14 @@ def compare_epochs(sdss_id, mjd_list, cache,
     return fig
 
 
-def plot_population(results_list, x_param='z_best', y_param='jet_frac',
+def bz_population(results_list, x_param='z_best', y_param='jet_frac',
                     color_by='best_label', save_dir=None):
     """
     Population-level scatter plot and distribution from a list of cached results.
 
     Parameters
     ----------
-    results_list : list of dicts from cache.load_object_results()
+    results_list : list of dicts from cache.load()
     x_param      : 'z_best', 'pl_alpha', 'pl_delta', 'aicc_margin', 'sn', 'jet_frac'
     y_param      : same options as x_param
     color_by     : 'best_label' or 'fermi_class'
@@ -1468,7 +1516,7 @@ def plot_population(results_list, x_param='z_best', y_param='jet_frac',
     return fig
 
 
-def plot_ew_summary(results, min_snr=3.0, save_dir=None):
+def bz_lines(results, min_snr=3.0, save_dir=None):
     """
     Scatter plot of detected equivalent widths with S/N labels.
 
@@ -1478,7 +1526,7 @@ def plot_ew_summary(results, min_snr=3.0, save_dir=None):
 
     Parameters
     ----------
-    results  : dict - output of RedshiftResultsCache.load_object_results()
+    results  : dict - output of NAKBlaZarCache.load()
     min_snr  : float - minimum S/N threshold (default 3.0)
     save_dir : str or None
 
@@ -1492,7 +1540,7 @@ def plot_ew_summary(results, min_snr=3.0, save_dir=None):
     lmfit = results['lmfit_results']
     z     = lmfit['z_best']
 
-    results_ew = compute_EW_for_all_lines(
+    results_ew = measure_ew(
         spec['common_wave'], spec['flux_resamp'],
         spec['err_resamp'], spec['fit_mask'], z)
 
