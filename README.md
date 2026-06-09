@@ -10,7 +10,7 @@
 
 Blazars are a subclass of radio loud Active Galactic Nuclei (AGN) with relativistic jets of pointed directly toward Earth. They are among the most energetic objects in the Universe and are detected across the full electromagnetic spectrum from radio to gamma rays.
 
-The SDSS automated spectroscopic pipeline systematically misclassifies blazars as stars because it has no model for the non-thermal jet emission. This pipeline corrects that by decomposing each optical spectrum into physically motivated components:
+The SDSS automated spectroscopic pipeline systematically struggles to correclty classify these blazars but rather assign STARS, QSO or GALAXY classes because it has no model for the non-thermal jet emission. This pipeline corrects that by decomposing each optical spectrum into physically motivated components:
 
 | Model | Physical meaning | Blazar class |
 |-------|-----------------|--------------|
@@ -29,7 +29,7 @@ The SDSS automated spectroscopic pipeline systematically misclassifies blazars a
 
 - **Spectral decomposition plots** — observed spectrum with best-fit model, jet/host component shading, line markers, and zoom insets on key spectral features
 - **Redshift posterior plots** — chi-squared (z) curves and p(z) for all six model families
-- **Equivalent width measurements** — for 16 emission and absorption features
+- **Equivalent width measurements** — for more than 10 emission and absorption features
 - **Raw fit parameters** — redshift, jet fraction, power-law slope, AICc margin, and more
 - **Classification summary** — one-line description of each source
 - **Epoch comparison** — overlay spectra from multiple observations to detect variability
@@ -41,7 +41,7 @@ The SDSS automated spectroscopic pipeline systematically misclassifies blazars a
 ## Installation
 
 ### Requirements
-- Python 3.8 or higher
+- Python 3.7 or higher
 - Works on Mac, Windows, and Linux
 
 ### Install blazarkit
@@ -72,7 +72,7 @@ Zenodo upon publication of SDSS-V DR20.
 
 In the meantime, access is available upon request:
 
-> Contact **Mohammed Nlowie Iddrisu** at m.i.nlowie@sms.ed.ac.uk
+> Contact **Mohammed Iddrisu Nlowie** @ m.i.nlowie@sms.ed.ac.uk 
 
 Once you have the cache, point `NAKBlaZarCache` to your local folder:
 
@@ -85,7 +85,7 @@ cache = NAKBlaZarCache(cache_dir='/path/to/your/cache')
 The Value-Added Catalogue (VAC) is available through the SDSS Science Archive Server (SAS):
 
 > **SDSS-V DR20 VAC: this is to be added upon publication**
-> https://data.sdss.org/sas/dr20/ : 
+> https://data.sdss.org/sas/dr20/... : 
 
 The VAC contains the full sample of 707 blazar candidates with their classifications, redshifts, jet fractions, and continuum parameters. You can use it to select sources of interest before loading them from the cache.
 
@@ -112,7 +112,7 @@ fig1, fig2 = bz_inspect(results, model='best')
 
 ![Example spectral fit](example.png)
 
-**Figure description:** Multi-component optical spectral decomposition of a Fermi-detected BL Lac candidate. The Powerlaw+Galaxy model (red) separates the jet contribution (orange shading) from the host galaxy (green shading). The inset zooms in on the Ca II H&K absorption doublet used to anchor the redshift. The lower panel shows normalised residuals.
+**Figure description:** Multi-component optical spectral decomposition of a Fermi-detected BL Lac candidate, showing the various model fit. The Powerlaw+Galaxy model (red) best fits the spectrum and separates the jet contribution (orange shading) from the host galaxy (green shading). The inset zooms in on the Ca II H&K absorption doublet used to anchor the redshift. The lower panel shows normalised residuals.
 
 ---
 
@@ -390,7 +390,7 @@ Fermi/SDSS-V blazar spectral fitting. Zenodo. doi:10.5281/zenodo.XXXXXXX
 
 > Note: blazarkit is a visualisation and analysis tool for the pre-computed
 > spectral fitting results. It does not include the fitting pipeline itself.
-> To reproduce or extend the fitting, please contact the authors.
+> To reproduce or extend the fitting, please contact the authors listed below.
 
 ### Data
 If you use the pre-computed spectral fitting results (cache files), please also cite:
@@ -416,7 +416,7 @@ Multiple-Epoch Sample. Zenodo. doi:10.5281/zenodo.ZZZZZZZ
 
 | Name | Institution | Email |
 |------|-------------|-------|
-| Mohammed Nlowie Iddrisu (Lead) | University of Edinburgh / Royal Observatory of Edinburgh | m.i.nlowie@sms.ed.ac.uk |
+| Mohammed Iddrisu Nlowie (Lead) | University of Edinburgh | m.i.nlowie@sms.ed.ac.uk |
 | Prof. James Aird (Supervisor) | University of Edinburgh | james.aird@ed.ac.uk |
 | Dr. Eli Kasai (Supervisor) | University of Namibia | ekasai@unam.na |
 
