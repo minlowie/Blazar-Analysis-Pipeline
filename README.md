@@ -384,7 +384,7 @@ Blazars using SDSS-V. MNRAS.
 If you use blazarkit to visualise or analyse the pre-computed results, please also cite:
 
 ```
-Nlowie et al. (2025) — blazarkit: Plotting and analysis utilities for
+Nlowie et al. (2026) — blazarkit: Plotting and analysis utilities for
 Fermi/SDSS-V blazar spectral fitting. Zenodo. doi:10.5281/zenodo.XXXXXXX
 ```
 
@@ -397,13 +397,13 @@ If you use the pre-computed spectral fitting results (cache files), please also 
 
 **Main sample (707 sources):**
 ```
-Nlowie et al. (2025) — Fermi/SDSS-V Blazar Spectral Fitting Results:
+Nlowie et al. (2026) — Fermi/SDSS-V Blazar Spectral Fitting Results:
 Main Sample. Zenodo. doi:10.5281/zenodo.YYYYYYY
 ```
 
 **Multiple-match sample (966 observations, for variability analysis):**
 ```
-Nlowie et al. (2025) — Fermi/SDSS-V Blazar Spectral Fitting Results:
+Nlowie et al. (2026) — Fermi/SDSS-V Blazar Spectral Fitting Results:
 Multiple-Epoch Sample. Zenodo. doi:10.5281/zenodo.ZZZZZZZ
 ```
 
