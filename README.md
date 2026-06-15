@@ -67,8 +67,7 @@ Zenodo upon publication of SDSS-V DR20.
 
 **Two datasets will be available:**
 
-- **Main sample** (707 sources — primary science results)
-- **Multiple-epoch sample** (966 observations — variability/changing-look analysis)
+- **Work Sample** (707 sources — primary science results)
 
 In the meantime, access is available upon request:
 
