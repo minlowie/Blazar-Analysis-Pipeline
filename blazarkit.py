@@ -178,7 +178,7 @@ class NAKBlaZarCache:
 
     def _fetch_from_dropbox(self, sdss_id, mjd=None):
         try:
-        import gdown
+            import gdown
         except ImportError:
             print("  gdown not installed. Run: pip install gdown")
             return False
