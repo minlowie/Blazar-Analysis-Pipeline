@@ -92,15 +92,8 @@ class NAKBlaZarCache:
     # Zenodo: Will replace XXXXXXX with real record ID upon DR20 public release
     ZENODO_BASE_URL = "https://zenodo.org/record/XXXXXXX/files"
 
-    # Dropbox: shared folder URL — files live in DROPBOX_SUBFOLDER within it
-    DROPBOX_FOLDER_URL = (
-        "https://www.dropbox.com/scl/fo/btrl8savrweyv5zw32gsu/"
-        "AKUYR8ZeZ0m2nc0Jyid9uCg?rlkey=a3x5oahm6hh0jfh37nz5wiclz"
-    )
-
-
-    # Subfolder inside the Dropbox shared folder containing the .pkl.gz files
-    DROPBOX_SUBFOLDER = "blazar_cache"
+    # Dropbox: set to True to enable — links loaded from dropbox_links.json
+    DROPBOX_ENABLED = True
 
     # Google Drive: set folder ID to enable (leave None to disable)
     GDRIVE_FOLDER_ID = None
@@ -250,7 +243,7 @@ class NAKBlaZarCache:
                 return self._load_from_disk(filepath)
 
         # 3. Dropbox — active when DROPBOX_ENABLED and dropbox_links.json exists
-        if self.DROPBOX_ENABLED:
+        if getattr(self, "DROPBOX_ENABLED", False):
             if self._fetch_from_dropbox(sdss_id, mjd):
                 return self._load_from_disk(filepath)
 
