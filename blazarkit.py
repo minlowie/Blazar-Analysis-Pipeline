@@ -143,37 +143,47 @@ class NAKBlaZarCache:
             return False
 
     def _fetch_from_dropbox(self, sdss_id, mjd=None):
-        """Stream a single file from Dropbox and save locally.
+        """Stream a single file from Dropbox using pre-generated direct links.
 
-        Constructs a direct download URL using the shared folder link
-        and the subfolder path where the files are stored.
+        Links are loaded from dropbox_links.json which is installed alongside
+        blazarkit.py. Each entry maps "SDSS_ID_MJD" to a direct download URL.
         """
+        import json
         import urllib.request
-        filename  = f"obj_{sdss_id}_{mjd}.pkl.gz" if mjd is not None \
-                    else f"obj_{sdss_id}.pkl.gz"
-        filepath  = self._get_object_path(sdss_id, mjd)
 
-        # Build direct download URL
-        base      = self.DROPBOX_FOLDER_URL.split('?')[0]
-        rlkey     = self.DROPBOX_FOLDER_URL.split('rlkey=')[1].split('&')[0]
-        subfolder = f"/{self.DROPBOX_SUBFOLDER}" if self.DROPBOX_SUBFOLDER else ""
-        url       = f"{base}{subfolder}/{filename}?rlkey={rlkey}&dl=1"
+        # Load file IDs from JSON installed with the package
+        json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                 'dropbox_links.json')
+        if not os.path.exists(json_path):
+            print("  dropbox_links.json not found — skipping Dropbox.")
+            return False
+
+        with open(json_path, 'r') as f:
+            file_ids = json.load(f)
+
+        key      = f"{sdss_id}_{mjd}" if mjd is not None else str(sdss_id)
+        url      = file_ids.get(key)
+        filename = f"obj_{sdss_id}_{mjd}.pkl.gz" if mjd is not None \
+                   else f"obj_{sdss_id}.pkl.gz"
+        filepath = self._get_object_path(sdss_id, mjd)
+
+        if url is None:
+            print(f"  No Dropbox link found for {key}")
+            return False
 
         print(f"  Fetching {filename} from Dropbox...")
         try:
             with urllib.request.urlopen(url, timeout=60) as response:
-                # Check we got a real file not an HTML redirect page
                 data = response.read()
-            if data[:2] == b'\x1f\x8b' or data[:2] == b'\x80\x04':
-                # Valid gzip or pickle header
-                with open(filepath, 'wb') as f:
-                    f.write(data)
-                print(f"  Saved locally: {os.path.basename(filepath)}")
-                return True
-            else:
-                print(f"  Dropbox returned unexpected content (got HTML redirect?).")
-                print(f"  First bytes: {data[:20]}")
-                return False
+            # Verify we got a real file not an HTML redirect
+            if data[:2] not in (b'\x1f\x8b', b'\x80\x04', b'\x80\x05'):
+                if data[:9] == b'<!DOCTYPE':
+                    print(f"  Dropbox returned HTML — check link validity.")
+                    return False
+            with open(filepath, 'wb') as f:
+                f.write(data)
+            print(f"  Saved locally: {os.path.basename(filepath)}")
+            return True
         except Exception as e:
             print(f"  Dropbox fetch failed: {e}")
             return False
@@ -239,8 +249,8 @@ class NAKBlaZarCache:
             if self._fetch_from_zenodo(sdss_id, mjd):
                 return self._load_from_disk(filepath)
 
-        # 3. Dropbox — active now
-        if self.DROPBOX_FOLDER_URL is not None:
+        # 3. Dropbox — active when DROPBOX_ENABLED and dropbox_links.json exists
+        if self.DROPBOX_ENABLED:
             if self._fetch_from_dropbox(sdss_id, mjd):
                 return self._load_from_disk(filepath)
 
