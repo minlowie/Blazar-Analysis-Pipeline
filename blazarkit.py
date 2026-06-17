@@ -67,12 +67,13 @@ ABSORPTION_LINES = {
 # -- Cache system --------------------------------------------------------------
 class NAKBlaZarCache:
     """
-    Load spectral fitting results from local cache, Google Drive, or Zenodo.
+    Load spectral fitting results from local cache, Zenodo, Dropbox or Google Drive.
 
     Priority order on first access:
       1. Local cache  — instant, no download
-      2. Zenodo       — Will update this when the DR20 goes public
-      3. Google Drive — fallback during embargo period
+      2. Zenodo       — active when DOI is confirmed after DR20 public release
+      3. Dropbox      — available now for authorised collaborators
+      4. Google Drive — additional fallback
 
     Downloaded files are saved locally so all subsequent calls are instant.
 
@@ -83,32 +84,24 @@ class NAKBlaZarCache:
 
     Usage
     -----
-        # Default — uses blazar_cache/ in current directory
-        cache = NAKBlaZarCache()
-
-        # Or specify a custom local path
-        cache = NAKBlaZarCache(cache_dir='/path/to/your/cache')
-
-        # Load a source
+        cache   = NAKBlaZarCache()
         results = cache.load('20570296', mjd=60027)
     """
 
     # ── Remote source URLs ────────────────────────────────────────────────────
-    # Zenodo: Will replace XXXXXXX with real record ID upon DR20 public release
+    # Zenodo: replace XXXXXXX with real record ID upon DR20 public release
     ZENODO_BASE_URL = "https://zenodo.org/record/XXXXXXX/files"
 
-    # Google Drive: replace None with the shared folder ID during embargo
-    # Format: "https://drive.google.com/uc?id=FILE_ID"
-    # Each file in the folder must have its own shareable link ID
-    # Leave as None to disable Google Drive fallback
-    GDRIVE_FOLDER_ID = None
-
-    # Dropbox: direct folder link for on-demand per-file streaming
-    # Individual files are fetched by constructing the direct download URL
+    # Dropbox: shared folder URL — files live in DROPBOX_SUBFOLDER within it
     DROPBOX_FOLDER_URL = (
         "https://www.dropbox.com/scl/fo/btrl8savrweyv5zw32gsu/"
         "AKUYR8ZeZ0m2nc0Jyid9uCg?rlkey=a3x5oahm6hh0jfh37nz5wiclz"
     )
+    # Subfolder inside the Dropbox shared folder containing the .pkl.gz files
+    DROPBOX_SUBFOLDER = "blazar_cache"
+
+    # Google Drive: set folder ID to enable (leave None to disable)
+    GDRIVE_FOLDER_ID = None
 
     def __init__(self, cache_dir="blazar_cache"):
         self.cache_dir = cache_dir
@@ -147,61 +140,62 @@ class NAKBlaZarCache:
             print(f"  Zenodo fetch failed: {e}")
             return False
 
-    def _fetch_from_gdrive(self, sdss_id, mjd=None):
-        """Download entire cache folder from Google Drive (one-time only).
+    def _fetch_from_dropbox(self, sdss_id, mjd=None):
+        """Stream a single file from Dropbox and save locally.
 
-        Triggered on first access when files are not found locally.
-        All 746 files are downloaded at once into cache_dir.
-        Subsequent calls to load() will be instant from local storage.
+        Constructs a direct download URL using the shared folder link
+        and the subfolder path where the files are stored.
         """
+        import urllib.request
+        filename  = f"obj_{sdss_id}_{mjd}.pkl.gz" if mjd is not None \
+                    else f"obj_{sdss_id}.pkl.gz"
+        filepath  = self._get_object_path(sdss_id, mjd)
+
+        # Build direct download URL
+        base      = self.DROPBOX_FOLDER_URL.split('?')[0]
+        rlkey     = self.DROPBOX_FOLDER_URL.split('rlkey=')[1].split('&')[0]
+        subfolder = f"/{self.DROPBOX_SUBFOLDER}" if self.DROPBOX_SUBFOLDER else ""
+        url       = f"{base}{subfolder}/{filename}?rlkey={rlkey}&dl=1"
+
+        print(f"  Fetching {filename} from Dropbox...")
+        try:
+            with urllib.request.urlopen(url, timeout=60) as response:
+                # Check we got a real file not an HTML redirect page
+                data = response.read()
+            if data[:2] == b'\x1f\x8b' or data[:2] == b'\x80\x04':
+                # Valid gzip or pickle header
+                with open(filepath, 'wb') as f:
+                    f.write(data)
+                print(f"  Saved locally: {os.path.basename(filepath)}")
+                return True
+            else:
+                print(f"  Dropbox returned unexpected content (got HTML redirect?).")
+                print(f"  First bytes: {data[:20]}")
+                return False
+        except Exception as e:
+            print(f"  Dropbox fetch failed: {e}")
+            return False
+
+    def _fetch_from_gdrive(self, sdss_id, mjd=None):
+        """Download entire cache folder from Google Drive (one-time only)."""
         try:
             import gdown
         except ImportError:
             print("  gdown not installed. Run: pip install gdown")
-            print("  Install with: pip install gdown")
             return False
-
         print(f"  Downloading cache from Google Drive...")
         print(f"  This is a one-time download — all future calls will be instant.")
         try:
             gdown.download_folder(
-                id     = self.GDRIVE_FOLDER_ID,
-                output = self.cache_dir,
-                quiet  = False,
+                id          = self.GDRIVE_FOLDER_ID,
+                output      = self.cache_dir,
+                quiet       = False,
                 use_cookies = False,
             )
             print(f"  Download complete. Files saved to: {self.cache_dir}/")
             return True
         except Exception as e:
             print(f"  Google Drive download failed: {e}")
-            return False
-
-    def _fetch_from_dropbox(self, sdss_id, mjd=None):
-        try:
-            import gdown
-        except ImportError:
-            print("  gdown not installed. Run: pip install gdown")
-            return False
-        filename = f"obj_{sdss_id}_{mjd}.pkl.gz" if mjd is not None \
-                   else f"obj_{sdss_id}.pkl.gz"
-        filepath = self._get_object_path(sdss_id, mjd)
-
-        # Construct direct download URL for new Dropbox scl/fo format
-        base   = self.DROPBOX_FOLDER_URL.split('?')[0]
-        rlkey  = self.DROPBOX_FOLDER_URL.split('rlkey=')[1].split('&')[0]
-        url    = f"{base}/{filename}?rlkey={rlkey}&dl=1&st=km63tkt2"
-
-        print(f"  Fetching {filename} from Dropbox...")
-        try:
-            import urllib.request
-            with urllib.request.urlopen(url, timeout=60) as response:
-                data = response.read()
-            with open(filepath, 'wb') as f:
-                f.write(data)
-            print(f"  Saved locally: {os.path.basename(filepath)}")
-            return True
-        except Exception as e:
-            print(f"  Dropbox fetch failed: {e}")
             return False
 
     def save_object_results(self, sdss_id, results_dict, mjd=None):
@@ -217,14 +211,14 @@ class NAKBlaZarCache:
         """
         Load results for a source.
 
-        Checks local cache first. If not found locally:
-          - Tries Zenodo (when ZENODO_BASE_URL has a real record ID)
-          - Falls back to Google Drive (when GDRIVE_FOLDER_ID is set)
-        Downloaded files are saved locally for instant future access.
+        Checks local cache first. If not found:
+          - Tries Zenodo (when real DOI is set)
+          - Tries Dropbox (URL already set — active now)
+          - Tries Google Drive (when GDRIVE_FOLDER_ID is set)
 
         Parameters
         ----------
-        sdss_id : int - SDSS_ID of the source
+        sdss_id : str - SDSS_ID of the source
         mjd     : int or None - MJD of the observation
 
         Returns
@@ -243,7 +237,7 @@ class NAKBlaZarCache:
             if self._fetch_from_zenodo(sdss_id, mjd):
                 return self._load_from_disk(filepath)
 
-        # 3. Dropbox — active when DROPBOX_FOLDER_URL is set
+        # 3. Dropbox — active now
         if self.DROPBOX_FOLDER_URL is not None:
             if self._fetch_from_dropbox(sdss_id, mjd):
                 return self._load_from_disk(filepath)
@@ -273,9 +267,6 @@ class NAKBlaZarCache:
                  if f.startswith("obj_") and f.endswith(".pkl.gz")]
         print(f"Found {len(files)} cached objects in {self.cache_dir}/")
         return files
-        print(f"Found {len(files)} cached objects in {self.cache_dir}/")
-        return files
-
 
 # --- Line marking -------------------------------------------------------------
 
