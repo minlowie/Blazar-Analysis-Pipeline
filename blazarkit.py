@@ -89,7 +89,7 @@ class NAKBlaZarCache:
     """
 
     # ── Remote source URLs ────────────────────────────────────────────────────
-    # Zenodo: replace XXXXXXX with real record ID upon DR20 public release
+    # Zenodo: Will replace XXXXXXX with real record ID upon DR20 public release
     ZENODO_BASE_URL = "https://zenodo.org/record/XXXXXXX/files"
 
     # Dropbox: shared folder URL — files live in DROPBOX_SUBFOLDER within it
@@ -97,6 +97,8 @@ class NAKBlaZarCache:
         "https://www.dropbox.com/scl/fo/btrl8savrweyv5zw32gsu/"
         "AKUYR8ZeZ0m2nc0Jyid9uCg?rlkey=a3x5oahm6hh0jfh37nz5wiclz"
     )
+
+
     # Subfolder inside the Dropbox shared folder containing the .pkl.gz files
     DROPBOX_SUBFOLDER = "blazar_cache"
 
