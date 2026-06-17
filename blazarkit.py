@@ -177,24 +177,23 @@ class NAKBlaZarCache:
             return False
 
     def _fetch_from_dropbox(self, sdss_id, mjd=None):
-        """Stream a single file from Dropbox and save locally.
-
-        Constructs a direct download URL from the shared folder link
-        by replacing the folder path with the individual file path.
-        """
-        import urllib.request
+        try:
+        import gdown
+        except ImportError:
+            print("  gdown not installed. Run: pip install gdown")
+            return False
         filename = f"obj_{sdss_id}_{mjd}.pkl.gz" if mjd is not None \
                    else f"obj_{sdss_id}.pkl.gz"
         filepath = self._get_object_path(sdss_id, mjd)
 
-        # Construct direct download URL for individual file
-        # Dropbox direct download: replace ?dl=0 with ?dl=1 and append filename
-        base = self.DROPBOX_FOLDER_URL.split('?')[0]
-        rlkey = self.DROPBOX_FOLDER_URL.split('rlkey=')[1].split('&')[0]
-        url = f"{base}/{filename}?rlkey={rlkey}&dl=1"
+        # Construct direct download URL for new Dropbox scl/fo format
+        base   = self.DROPBOX_FOLDER_URL.split('?')[0]
+        rlkey  = self.DROPBOX_FOLDER_URL.split('rlkey=')[1].split('&')[0]
+        url    = f"{base}/{filename}?rlkey={rlkey}&dl=1&st=km63tkt2"
 
         print(f"  Fetching {filename} from Dropbox...")
         try:
+            import urllib.request
             with urllib.request.urlopen(url, timeout=60) as response:
                 data = response.read()
             with open(filepath, 'wb') as f:
