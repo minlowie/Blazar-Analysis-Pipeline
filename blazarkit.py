@@ -67,23 +67,146 @@ ABSORPTION_LINES = {
 # -- Cache system --------------------------------------------------------------
 class NAKBlaZarCache:
     """
-    Load and save spectral fitting results cached as compressed pickle files.
+    Load spectral fitting results from local cache, Google Drive, or Zenodo.
 
-    Each source is stored as a single .pkl.gz file named
-    obj_{SDSS_ID}_{MJD}.pkl.gz in the cache directory.
+    Priority order on first access:
+      1. Local cache  — instant, no download
+      2. Zenodo       — Will update this when the DR20 goes public
+      3. Google Drive — fallback during embargo period
+
+    Downloaded files are saved locally so all subsequent calls are instant.
+
+    Parameters
+    ----------
+    cache_dir : str - local directory to store downloaded files.
+                Defaults to 'blazar_cache' in the current directory.
+
+    Usage
+    -----
+        # Default — uses blazar_cache/ in current directory
+        cache = NAKBlaZarCache()
+
+        # Or specify a custom local path
+        cache = NAKBlaZarCache(cache_dir='/path/to/your/cache')
+
+        # Load a source
+        results = cache.load('20570296', mjd=60027)
     """
+
+    # ── Remote source URLs ────────────────────────────────────────────────────
+    # Zenodo: Will replace XXXXXXX with real record ID upon DR20 public release
+    ZENODO_BASE_URL = "https://zenodo.org/record/XXXXXXX/files"
+
+    # Google Drive: replace None with the shared folder ID during embargo
+    # Format: "https://drive.google.com/uc?id=FILE_ID"
+    # Each file in the folder must have its own shareable link ID
+    # Leave as None to disable Google Drive fallback
+    GDRIVE_FOLDER_ID = None
+
+    # Dropbox: direct folder link for on-demand per-file streaming
+    # Individual files are fetched by constructing the direct download URL
+    DROPBOX_FOLDER_URL = (
+        "https://www.dropbox.com/scl/fo/btrl8savrweyv5zw32gsu/"
+        "AKUYR8ZeZ0m2nc0Jyid9uCg?rlkey=a3x5oahm6hh0jfh37nz5wiclz"
+    )
 
     def __init__(self, cache_dir="blazar_cache"):
         self.cache_dir = cache_dir
-        if not os.path.exists(self.cache_dir):
-            os.makedirs(self.cache_dir, exist_ok=True)
+        os.makedirs(self.cache_dir, exist_ok=True)
 
     def _get_object_path(self, sdss_id, mjd=None):
         filename = f"obj_{sdss_id}_{mjd}.pkl.gz" if mjd is not None \
                    else f"obj_{sdss_id}.pkl.gz"
         return os.path.join(self.cache_dir, filename)
 
+    def _load_from_disk(self, filepath):
+        """Load a .pkl.gz file from disk."""
+        try:
+            with gzip.open(filepath, 'rb') as f:
+                return pickle.load(f)
+        except gzip.BadGzipFile:
+            with open(filepath, 'rb') as f:
+                return pickle.load(f)
+
+    def _fetch_from_zenodo(self, sdss_id, mjd=None):
+        """Stream a file from Zenodo and save locally."""
+        import urllib.request
+        filename = f"obj_{sdss_id}_{mjd}.pkl.gz" if mjd is not None \
+                   else f"obj_{sdss_id}.pkl.gz"
+        url      = f"{self.ZENODO_BASE_URL}/{filename}"
+        filepath = self._get_object_path(sdss_id, mjd)
+        print(f"  Fetching {filename} from Zenodo...")
+        try:
+            with urllib.request.urlopen(url, timeout=30) as response:
+                data = response.read()
+            with open(filepath, 'wb') as f:
+                f.write(data)
+            print(f"  Saved locally: {os.path.basename(filepath)}")
+            return True
+        except Exception as e:
+            print(f"  Zenodo fetch failed: {e}")
+            return False
+
+    def _fetch_from_gdrive(self, sdss_id, mjd=None):
+        """Download entire cache folder from Google Drive (one-time only).
+
+        Triggered on first access when files are not found locally.
+        All 746 files are downloaded at once into cache_dir.
+        Subsequent calls to load() will be instant from local storage.
+        """
+        try:
+            import gdown
+        except ImportError:
+            print("  gdown not installed. Run: pip install gdown")
+            print("  Install with: pip install gdown")
+            return False
+
+        print(f"  Downloading cache from Google Drive...")
+        print(f"  This is a one-time download — all future calls will be instant.")
+        try:
+            gdown.download_folder(
+                id     = self.GDRIVE_FOLDER_ID,
+                output = self.cache_dir,
+                quiet  = False,
+                use_cookies = False,
+            )
+            print(f"  Download complete. Files saved to: {self.cache_dir}/")
+            return True
+        except Exception as e:
+            print(f"  Google Drive download failed: {e}")
+            return False
+
+    def _fetch_from_dropbox(self, sdss_id, mjd=None):
+        """Stream a single file from Dropbox and save locally.
+
+        Constructs a direct download URL from the shared folder link
+        by replacing the folder path with the individual file path.
+        """
+        import urllib.request
+        filename = f"obj_{sdss_id}_{mjd}.pkl.gz" if mjd is not None \
+                   else f"obj_{sdss_id}.pkl.gz"
+        filepath = self._get_object_path(sdss_id, mjd)
+
+        # Construct direct download URL for individual file
+        # Dropbox direct download: replace ?dl=0 with ?dl=1 and append filename
+        base = self.DROPBOX_FOLDER_URL.split('?')[0]
+        rlkey = self.DROPBOX_FOLDER_URL.split('rlkey=')[1].split('&')[0]
+        url = f"{base}/{filename}?rlkey={rlkey}&dl=1"
+
+        print(f"  Fetching {filename} from Dropbox...")
+        try:
+            with urllib.request.urlopen(url, timeout=60) as response:
+                data = response.read()
+            with open(filepath, 'wb') as f:
+                f.write(data)
+            print(f"  Saved locally: {os.path.basename(filepath)}")
+            return True
+        except Exception as e:
+            print(f"  Dropbox fetch failed: {e}")
+            return False
+
     def save_object_results(self, sdss_id, results_dict, mjd=None):
+        """Save results to local cache."""
         results_dict['metadata']['timestamp'] = datetime.now().isoformat()
         filepath = self._get_object_path(sdss_id, mjd)
         with gzip.open(filepath, 'wb') as f:
@@ -91,40 +214,18 @@ class NAKBlaZarCache:
         print(f"Saved: {os.path.basename(filepath)}")
         return filepath
 
-    # Zenodo base URL — replace XXXXXXX with real record ID upon publication
-    ZENODO_BASE_URL = "https://zenodo.org/record/XXXXXXX/files"
-
-    def _fetch_from_zenodo(self, sdss_id, mjd=None):
-        """Stream a single source file from Zenodo and save locally."""
-        import urllib.request
-        filename = f"obj_{sdss_id}_{mjd}.pkl.gz" if mjd is not None \
-                   else f"obj_{sdss_id}.pkl.gz"
-        url = f"{self.ZENODO_BASE_URL}/{filename}"
-        print(f"  Fetching {filename} from Zenodo...")
-        try:
-            with urllib.request.urlopen(url, timeout=30) as response:
-                data = response.read()
-            filepath = self._get_object_path(sdss_id, mjd)
-            with open(filepath, 'wb') as f:
-                f.write(data)
-            print(f"  Saved locally: {os.path.basename(filepath)}")
-        except Exception as e:
-            raise FileNotFoundError(
-                f"Could not fetch SDSS_ID={sdss_id} MJD={mjd}.\n"
-                f"Check the SDSS_ID and MJD are correct.\n"
-                f"Error: {e}"
-            )
-
     def load(self, sdss_id, mjd=None):
         """
         Load results for a source.
 
-        Checks local cache first. If not found locally, streams from
-        Zenodo and saves locally so all future calls are instant.
+        Checks local cache first. If not found locally:
+          - Tries Zenodo (when ZENODO_BASE_URL has a real record ID)
+          - Falls back to Google Drive (when GDRIVE_FOLDER_ID is set)
+        Downloaded files are saved locally for instant future access.
 
         Parameters
         ----------
-        sdss_id : str - SDSS_ID of the source
+        sdss_id : int - SDSS_ID of the source
         mjd     : int or None - MJD of the observation
 
         Returns
@@ -133,31 +234,46 @@ class NAKBlaZarCache:
         """
         filepath = self._get_object_path(sdss_id, mjd)
 
-        if not os.path.exists(filepath):
-            raise FileNotFoundError(
-                f"\nSource not found locally.\n"
-                f"The cache is currently available upon request.\n"
-                f"Contact: m.i.nlowie@sms.ed.ac.uk\n"
-                f"After downloading, point NAKBlaZarCache to your local folder:\n"
-                f"  cache = NAKBlaZarCache(cache_dir='/path/to/your/cache')\n"
-                f"SDSS_ID={sdss_id}, MJD={mjd}"
-            )
+        # 1. Local cache — instant
+        if os.path.exists(filepath):
+            print(f"Loaded: {os.path.basename(filepath)}")
+            return self._load_from_disk(filepath)
 
-        try:
-            with gzip.open(filepath, 'rb') as f:
-                results = pickle.load(f)
-        except gzip.BadGzipFile:
-            with open(filepath, 'rb') as f:
-                results = pickle.load(f)
+        # 2. Zenodo — active when real DOI is set
+        if self.ZENODO_BASE_URL and 'XXXXXXX' not in self.ZENODO_BASE_URL:
+            if self._fetch_from_zenodo(sdss_id, mjd):
+                return self._load_from_disk(filepath)
 
-        print(f"Loaded: {os.path.basename(filepath)}")
-        return results
+        # 3. Dropbox — active when DROPBOX_FOLDER_URL is set
+        if self.DROPBOX_FOLDER_URL is not None:
+            if self._fetch_from_dropbox(sdss_id, mjd):
+                return self._load_from_disk(filepath)
+
+        # 4. Google Drive — active when folder ID is set
+        if self.GDRIVE_FOLDER_ID is not None:
+            if self._fetch_from_gdrive(sdss_id, mjd):
+                return self._load_from_disk(filepath)
+
+        # 5. Nothing worked
+        raise FileNotFoundError(
+            f"\nSource not found locally or remotely.\n"
+            f"SDSS_ID={sdss_id}, MJD={mjd}\n\n"
+            f"The cache is currently available upon request.\n"
+            f"Contact: m.i.nlowie@sms.ed.ac.uk\n\n"
+            f"After receiving the cache, point NAKBlaZarCache to your folder:\n"
+            f"  cache = NAKBlaZarCache(cache_dir='/path/to/your/cache')"
+        )
+
     def exists(self, sdss_id, mjd=None):
+        """Check if a source exists in local cache."""
         return os.path.exists(self._get_object_path(sdss_id, mjd))
 
     def list_cached_objects(self):
+        """List all sources in the local cache."""
         files = [f for f in os.listdir(self.cache_dir)
                  if f.startswith("obj_") and f.endswith(".pkl.gz")]
+        print(f"Found {len(files)} cached objects in {self.cache_dir}/")
+        return files
         print(f"Found {len(files)} cached objects in {self.cache_dir}/")
         return files
 
