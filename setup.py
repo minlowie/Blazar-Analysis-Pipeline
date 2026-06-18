@@ -12,7 +12,7 @@ setup(
     author           = 'Mohammed Iddrisu Nlowie',
     author_email     = '',
     url              = 'https://github.com/minlowie/Blazar-Analysis-Pipeline',
-    py_modules       = ['blazarkit'],
+    py_modules       = ['blazarkit', 'blazarkit_ml'],
     package_data     = {'': ['dropbox_links.json']},
     data_files       = [('', ['dropbox_links.json'])],
     python_requires  = '>=3.8', 
