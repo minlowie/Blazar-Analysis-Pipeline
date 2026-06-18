@@ -1591,8 +1591,11 @@ def bz_population(results_list, x_param='z_best', y_param='jet_frac',
 
     ax.set_xlabel(axis_labels.get(x_param, x_param), fontsize=12)
     ax.set_ylabel(axis_labels.get(y_param, y_param), fontsize=12)
+    n_excluded = len(results_list) - len(x_vals)
+    excl_str   = f', {n_excluded} excluded — no {y_param}' if n_excluded > 0 else ''
     ax.set_title(f'{axis_labels.get(y_param, y_param)} vs '
-                 f'{axis_labels.get(x_param, x_param)} (N={len(x_vals)})',
+                 f'{axis_labels.get(x_param, x_param)} '
+                 f'(N={len(x_vals)}{excl_str})',
                  fontsize=12, fontweight='bold')
     ax.legend(fontsize=9)
     ax.grid(alpha=0.3)
