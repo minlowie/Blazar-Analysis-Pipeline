@@ -216,3 +216,18 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# macOS
+.DS_Store
+.AppleDouble
+
+# Generated outputs
+output_plots/
+
+# Personal notebooks
+blazar_test.ipynb
+Quick Look .docx
+
+# Data files
+*.pkl
+*.fits
+*.csv
