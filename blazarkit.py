@@ -558,6 +558,26 @@ def get_redshift_peaks(pz_total, z_grid, min_height=0.05):
                   key=lambda x: x[1], reverse=True)
 
 
+def get_mjd(sdss_id, cache):
+        """
+    Find the MJD for a source from the local cache filenames.
+
+    Parameters
+    ----------
+    sdss_id : str - SDSS_ID of the source
+    cache   : NAKBlaZarCache instance
+
+    Returns
+    -------
+    mjd : int or None if not found
+    """
+    files = cache.list_cached_objects()
+    matches = [f for f in files if f'obj_{sdss_id}_' in f]
+    if matches:
+        return int(matches[0].replace('.pkl.gz', '').split('_')[2])
+    print(f"  No cache file found for SDSS_ID={sdss_id}")
+    return None 
+
 # -- Main plot function ----------------------------------------------------------
 
 def bz_inspect(results, model, save_dir=None,
@@ -577,7 +597,7 @@ def bz_inspect(results, model, save_dir=None,
     ----------
     results              : dict - output of NAKBlaZarCache.load()
     save_dir             : str or None - saves spectral plot as PDF if provided
-    show_fig1            : bool - show chi2(z) and p(z) figure (default False)
+    posetrior            : bool - show chi2(z) and p(z) figure (default False)
     show_fig2            : bool - show best-fit spectrum figure (default True)
     show_inset           : bool - show zoom insets for detected lines (default True)
     show_residuals       : bool - show normalised residuals panel (default True)
