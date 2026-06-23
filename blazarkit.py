@@ -266,11 +266,12 @@ class NAKBlaZarCache:
         """Check if a source exists in local cache."""
         return os.path.exists(self._get_object_path(sdss_id, mjd))
 
-    def list_cached_objects(self):
+    def list_cached_objects(self, verbose=True):
         """List all sources in the local cache."""
         files = [f for f in os.listdir(self.cache_dir)
                  if f.startswith("obj_") and f.endswith(".pkl.gz")]
-        print(f"Found {len(files)} cached objects in {self.cache_dir}/")
+        if verbose:
+            print(f"Found {len(files)} cached objects in {self.cache_dir}/")
         return files
 
 # --- Line marking -------------------------------------------------------------
@@ -563,7 +564,7 @@ def get_mjd(sdss_id, cache):
     import json, os
 
     # First check local cache
-    files   = cache.list_cached_objects()
+    files   = cache.list_cached_objects(verbose=False)
     matches = [f for f in files if f'obj_{sdss_id}_' in f]
     if matches:
         return int(matches[0].replace('.pkl.gz', '').split('_')[2])
@@ -1337,10 +1338,11 @@ def bz_compare(object_list, cache, final_bl,
 
         print(f"  [{idx+1}] {best_label}, z={z_best:.3f}")
 
-    os.makedirs(save_dir, exist_ok=True)
-    outpath = os.path.join(save_dir, "multi_object_comparison.pdf")
-    fig.savefig(outpath, dpi=300, bbox_inches='tight')
-    print(f"\nSaved: {outpath}")
+    if save_dir is not None:
+        os.makedirs(save_dir, exist_ok=True)
+        outpath = os.path.join(save_dir, "multi_object_comparison.pdf")
+        fig.savefig(outpath, dpi=300, bbox_inches='tight')
+        print(f"\nSaved: {outpath}")
     plt.show()
     return fig
 
