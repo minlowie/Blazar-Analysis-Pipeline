@@ -88,7 +88,7 @@ class NAKBlaZarCache:
         results = cache.load('20570296', mjd=60027)
     """
 
-    # ── Remote source URLs ────────────────────────────────────────────────────
+    # -- Remote source URLs --------------------------------------------------
     # Zenodo: Will replace XXXXXXX with real record ID upon DR20 public release
     ZENODO_BASE_URL = "https://zenodo.org/record/XXXXXXX/files"
 
@@ -1039,7 +1039,7 @@ def bz_compare(object_list, cache, final_bl,
                                         n_cols=2, save_dir="paper_plots"):
     """
     Create a multi-panel comparison plot for a list of sources.
-
+ 
     Parameters
     ----------
     object_list : list of dicts with keys 'SDSS_ID' and optionally 'MJD'
@@ -1053,57 +1053,62 @@ def bz_compare(object_list, cache, final_bl,
     n_rows      = int(np.ceil(n_objects / n_cols))
     panel_labels = list(string.ascii_lowercase[:n_objects])
     WAVE_MIN, WAVE_MAX = 3800, 10000
-
+ 
     fig = plt.figure(figsize=(11 * n_cols, 8 * n_rows))
-
+ 
     left_margin  = 0.07;  right_margin = 0.02
     top_margin   = 0.02;  bottom_margin = 0.05
     col_spacing  = 0.03;  row_spacing  = 0.04
     spec_resid_gap = 0.01
-
+ 
     usable_width     = 1.0 - left_margin - right_margin
     usable_height    = 1.0 - top_margin  - bottom_margin
     panel_width      = (usable_width  - (n_cols - 1) * col_spacing) / n_cols
     total_row_height = (usable_height - (n_rows - 1) * row_spacing) / n_rows
     spec_height      = total_row_height * 0.78
     resid_height     = total_row_height * 0.20
-
+ 
     for idx, obj in enumerate(object_list):
         row_idx = idx // n_cols
         col_idx = idx  % n_cols
-
+ 
         left         = left_margin + col_idx * (panel_width + col_spacing)
         top_of_obj   = 1.0 - top_margin - row_idx * (total_row_height + row_spacing)
         spec_bottom  = top_of_obj - spec_height
         resid_bottom = spec_bottom - spec_resid_gap - resid_height
-
+ 
         ax_spec  = fig.add_axes([left, spec_bottom,  panel_width, spec_height])
         ax_resid = fig.add_axes([left, resid_bottom, panel_width, resid_height],
                                 sharex=ax_spec)
-
+ 
         sdss_id = obj['SDSS_ID']
         mjd     = obj.get('MJD', None)
-
+ 
         try:
             results = cache.load(str(sdss_id), mjd)
         except Exception as e:
             print(f"  Failed to load {sdss_id}: {e}")
             continue
-
+ 
         meta      = results['metadata']
         spec      = results['spectrum']
         lmfit_res = results['lmfit_results']
         comp      = results['components']
+ 
+        # Match SDSS_ID robustly — handles int/str type mismatch
+        try:
+            sdss_id_int = int(sdss_id)
+            row_match   = final_bl[final_bl['SDSS_ID'] == sdss_id_int]
+        except (ValueError, TypeError):
+            row_match   = final_bl[final_bl['SDSS_ID'].astype(str) == str(sdss_id)]
 
-        row_match  = final_bl[final_bl['SDSS_ID'] == sdss_id]
         fhl_class  = row_match['FGL_CLASS'][0]    if len(row_match) > 0 else "N/A"
         sdss_name  = row_match['SDSS_NAME'][0]    if len(row_match) > 0 else "N/A"
-        daic       = np.nan
-        RCHI       = row_match['rchi2_sdss'][0]   if len(row_match) > 0 else np.nan
-        sn         = row_match['SNR'][0]          if len(row_match) > 0 else np.nan
-        lm_rchi    = row_match['rchi2_fit'][0]    if len(row_match) > 0 else np.nan
-        fhl_z      = row_match['Z_SDSS'][0]       if len(row_match) > 0 else np.nan
-
+        RCHI       = float(row_match['rchi2_sdss'][0]) if len(row_match) > 0 else np.nan
+        sn         = float(row_match['SNR'][0])        if len(row_match) > 0 else np.nan
+        lm_rchi    = float(row_match['rchi2_fit'][0])  if len(row_match) > 0 else np.nan
+        fhl_z      = float(row_match['Z_SDSS'][0])     if len(row_match) > 0 else np.nan
+ 
         z_best     = lmfit_res['z_best']
         z_sdss     = meta['z_sdss']
         best_label = lmfit_res['best_label']
@@ -1111,32 +1116,32 @@ def bz_compare(object_list, cache, final_bl,
         best_params= lmfit_res['best_fit_params']
         z_err      = lmfit_res.get('z_err', np.nan)
         fit_data   = lmfit_res
-
+ 
         x_fit       = spec['x_fit']
         flux_resamp = spec['flux_resamp']
         common_wave = spec['common_wave']
         err_resamp  = spec['err_resamp']
         fit_mask    = spec['fit_mask']
-
+ 
         wave_mask  = (common_wave >= WAVE_MIN) & (common_wave <= WAVE_MAX)
         xfit_mask  = (x_fit      >= WAVE_MIN) & (x_fit      <= WAVE_MAX)
         wave_plot  = common_wave[wave_mask]
         flux_plot  = flux_resamp[wave_mask]
         err_plot   = err_resamp[wave_mask]
         x_fit_plot = x_fit[xfit_mask]
-
+ 
         ax_spec.plot(wave_plot, flux_plot, 'k', lw=1, alpha=0.7, label='Observed')
         ax_spec.fill_between(wave_plot, flux_plot - err_plot,
                              flux_plot + err_plot,
                              color='gray', alpha=0.4, label=r'$\pm1\sigma$')
-
+ 
         is_pl_gal   = (best_label == 'Powerlaw+Galaxy')
         is_pl_qso   = best_label.startswith('Powerlaw+QSO')
         is_pl_lines = best_label.startswith('Powerlaw+Lines')
         is_galaxy   = (best_label == 'Galaxy')
         is_qso      = ('QSO' in best_label and 'Powerlaw' not in best_label)
         is_pl_only  = (best_label == 'Powerlaw')
-
+ 
         if is_pl_gal and fit_data['fit_galpl'] is not None:
             ax_spec.plot(x_fit_plot,
                          fit_data['fit_galpl']['best_fit'][xfit_mask],
@@ -1156,7 +1161,7 @@ def bz_compare(object_list, cache, final_bl,
                              fontsize=12, weight='bold',
                              bbox=dict(boxstyle='round', facecolor='wheat',
                                        alpha=0.85, edgecolor='black'))
-
+ 
         elif is_pl_qso and fit_data['fit_qsopl'] is not None:
             ax_spec.plot(x_fit_plot,
                          fit_data['fit_qsopl']['best_fit'][xfit_mask],
@@ -1177,7 +1182,7 @@ def bz_compare(object_list, cache, final_bl,
                              fontsize=12, weight='bold',
                              bbox=dict(boxstyle='round', facecolor='lightblue',
                                        alpha=0.85, edgecolor='black'))
-
+ 
         elif is_pl_lines and fit_data['fit_linepl'] is not None:
             ax_spec.plot(x_fit_plot,
                          fit_data['fit_linepl']['best_fit'][xfit_mask],
@@ -1198,22 +1203,22 @@ def bz_compare(object_list, cache, final_bl,
                              fontsize=12, weight='bold',
                              bbox=dict(boxstyle='round', facecolor='lightcyan',
                                        alpha=0.85, edgecolor='black'))
-
+ 
         elif is_galaxy and fit_data['fit_gal'] is not None:
             ax_spec.plot(x_fit_plot,
                          fit_data['fit_gal']['best_fit'][xfit_mask],
                          'g', lw=2.5, label='Galaxy')
-
+ 
         elif is_qso and fit_data['fit_qso'] is not None:
             ax_spec.plot(x_fit_plot,
                          fit_data['fit_qso']['best_fit'][xfit_mask],
                          'b', lw=2.5, label='QSO')
-
+ 
         elif is_pl_only and fit_data['fit_pl'] is not None:
             ax_spec.plot(x_fit_plot,
                          fit_data['fit_pl']['best_fit'][xfit_mask],
                          'orange', lw=2.5, label='PL')
-
+ 
         # y-limits
         all_flux = [flux_plot]
         if is_pl_gal and comp['galpl_contrib'] is not None:
@@ -1225,17 +1230,17 @@ def bz_compare(object_list, cache, final_bl,
         elif is_pl_lines and comp['linepl_contrib'] is not None:
             all_flux += [comp['linepl_contrib']['tpl'][xfit_mask],
                          comp['linepl_contrib']['pl'][xfit_mask]]
-
+ 
         combined = np.concatenate([f[np.isfinite(f)] for f in all_flux])
         y_lo  = np.nanpercentile(combined,  1)
         y_hi  = np.nanpercentile(flux_plot, 99)
         y_pad = (y_hi - y_lo) * 0.25
         ax_spec.set_ylim(y_lo - y_pad, y_hi + y_pad)
-
+ 
         # Line markers
         add_line_markers_to_plot(ax_spec, z_best,
                                   x_range=(WAVE_MIN, WAVE_MAX))
-
+ 
         # Zoom inset
         cak_obs  = 3933.7 * (1 + z_best)
         cah_obs  = 3967.5 * (1 + z_best)
@@ -1243,7 +1248,7 @@ def bz_compare(object_list, cache, final_bl,
         hb_obs   = 4861.3 * (1 + z_best)
         ha_obs   = 6562.8 * (1 + z_best)
         civ_obs  = 1549.0 * (1 + z_best)
-
+ 
         zoom_center = None
         if is_pl_gal:
             frac_gal = (comp['galpl_contrib']['frac_tpl']
@@ -1255,7 +1260,7 @@ def bz_compare(object_list, cache, final_bl,
                                (cah_obs, 'Ca II H', 'forestgreen')]
                 zoom_loc    = 'lower center'
                 loc1, loc2  = 1, 3
-
+ 
         elif is_pl_qso or is_pl_lines or is_qso:
             for obs, label, color in [
                 (mgii_obs, 'Mg II', 'dodgerblue'),
@@ -1270,7 +1275,7 @@ def bz_compare(object_list, cache, final_bl,
                     zoom_loc    = 'lower right'
                     loc1, loc2  = 1, 3
                     break
-
+ 
         elif is_galaxy:
             zoom_center = [cak_obs, cah_obs]
             zoom_width  = 150
@@ -1278,7 +1283,7 @@ def bz_compare(object_list, cache, final_bl,
                            (cah_obs, 'Ca II H', 'forestgreen')]
             zoom_loc    = 'lower right'
             loc1, loc2  = 1, 3
-
+ 
         if zoom_center is not None:
             zoom_mean = np.mean(zoom_center)
             if WAVE_MIN + zoom_width / 2 < zoom_mean < WAVE_MAX - zoom_width / 2:
@@ -1292,26 +1297,26 @@ def bz_compare(object_list, cache, final_bl,
                     inset_width="30%", inset_height="35%",
                     connector_color='red', borderpad=1.0,
                     loc1=loc1, loc2=loc2)
-
+ 
         # Title and labels
         z_sdss_str = (f"{z_sdss:.3f}"
                       if z_sdss is not None and np.isfinite(z_sdss) else "N/A")
         z_err_str  = f"±{z_err:.3f}" if not np.isnan(z_err) else ""
-
+ 
         ax_spec.set_title(
-            f"({panel_labels[idx]}) {sdss_name} | {fhl_class} | "
+            f"({panel_labels[idx]}) {sdss_name} | 4FGL: {fhl_class} | "
             f"SDSS: {obj_class} (z={z_sdss_str}) | fhl_z={fhl_z:.3f}\n"
             f"Best: {best_label} | z_fit={z_best:.3f}{z_err_str} | "
             f"χ²_r SDSS={RCHI:.2f} lmfit={lm_rchi:.2f} | S/N={sn:.1f}",
             fontsize=11, fontweight='bold', pad=2)
-
+ 
         ax_spec.set_ylabel(r'Flux [$10^{-17}$ erg/s/cm$^2$/Å]',
                             fontsize=12, fontweight='bold')
         ax_spec.tick_params(labelsize=9, labelbottom=False)
         ax_spec.legend(fontsize=8, loc='upper right', framealpha=0.9)
         ax_spec.grid(alpha=0.3)
         ax_spec.set_xlim(WAVE_MIN, WAVE_MAX)
-
+ 
         # Residuals
         if (best_params is not None and
                 best_params.get('best_fit') is not None):
@@ -1328,24 +1333,23 @@ def bz_compare(object_list, cache, final_bl,
                           va='top', ha='right', fontsize=8,
                           bbox=dict(boxstyle='round', facecolor='white',
                                     alpha=0.8, edgecolor='black'))
-
+ 
         ax_resid.set_ylim(-5, 5)
         ax_resid.set_xlim(WAVE_MIN, WAVE_MAX)
         ax_resid.set_xlabel(r'Wavelength [Å]', fontsize=12, fontweight='bold')
         ax_resid.set_ylabel(r'Resid. ($\sigma$)', fontsize=12, fontweight='bold')
         ax_resid.tick_params(labelsize=9)
         ax_resid.grid(alpha=0.3)
-
+ 
         print(f"  [{idx+1}] {best_label}, z={z_best:.3f}")
-
-    if save_dir is not None:
-        os.makedirs(save_dir, exist_ok=True)
-        outpath = os.path.join(save_dir, "multi_object_comparison.pdf")
-        fig.savefig(outpath, dpi=300, bbox_inches='tight')
-        print(f"\nSaved: {outpath}")
+ 
+    os.makedirs(save_dir, exist_ok=True)
+    outpath = os.path.join(save_dir, "multi_object_comparison.pdf")
+    fig.savefig(outpath, dpi=300, bbox_inches='tight')
+    print(f"\nSaved: {outpath}")
     plt.show()
     return fig
-
+ 
 
 # -- New utility functions ------------------------------------------------------
 
@@ -1539,7 +1543,7 @@ def bz_population(results_list, x_param='z_best', y_param='jet_frac',
                     color_by='best_label', save_dir=None):
     """
     Population-level scatter plot and distribution from a list of cached results.
-
+ 
     Parameters
     ----------
     results_list : list of dicts from cache.load()
@@ -1567,7 +1571,7 @@ def bz_population(results_list, x_param='z_best', y_param='jet_frac',
         elif param == 'aicc_margin': return lm.get('aicc_margin', np.nan)
         elif param == 'sn':          return m['sn_median']
         return np.nan
-
+ 
     def get_color_label(res):
         lm = res['lmfit_results']
         m  = res['metadata']
@@ -1587,7 +1591,7 @@ def bz_population(results_list, x_param='z_best', y_param='jet_frac',
             elif fc == 'bcu':  return 'BCU',    'goldenrod'
             else:              return fc,        'gray'
         return 'Unknown', 'gray'
-
+ 
     x_vals, y_vals, labels, colors_list = [], [], [], []
     for res in results_list:
         x = extract(res, x_param)
@@ -1596,18 +1600,18 @@ def bz_population(results_list, x_param='z_best', y_param='jet_frac',
             lab, col = get_color_label(res)
             x_vals.append(x); y_vals.append(y)
             labels.append(lab); colors_list.append(col)
-
+ 
     x_vals = np.array(x_vals)
     y_vals = np.array(y_vals)
-
+ 
     axis_labels = {
         'z_best': 'Redshift z', 'jet_frac': 'Jet fraction',
         'pl_alpha': 'PL slope alpha', 'pl_delta': 'PL curvature delta',
         'aicc_margin': 'AICc margin', 'sn': 'S/N',
     }
-
+ 
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-
+ 
     ax = axes[0]
     seen = set()
     for x, y, lab, col in zip(x_vals, y_vals, labels, colors_list):
@@ -1616,43 +1620,47 @@ def bz_population(results_list, x_param='z_best', y_param='jet_frac',
             seen.add(lab)
         else:
             ax.scatter(x, y, color=col, s=20, alpha=0.6)
-
+ 
     ax.set_xlabel(axis_labels.get(x_param, x_param), fontsize=12)
     ax.set_ylabel(axis_labels.get(y_param, y_param), fontsize=12)
-    n_excluded = len(results_list) - len(x_vals)
-    excl_str   = f', {n_excluded} excluded — no {y_param}' if n_excluded > 0 else ''
     ax.set_title(f'{axis_labels.get(y_param, y_param)} vs '
-                 f'{axis_labels.get(x_param, x_param)} '
-                 f'(N={len(x_vals)}{excl_str})',
+                 f'{axis_labels.get(x_param, x_param)} (N={len(x_vals)})',
                  fontsize=12, fontweight='bold')
     ax.legend(fontsize=9)
     ax.grid(alpha=0.3)
-
+ 
     ax2 = axes[1]
     unique_labels  = list(dict.fromkeys(labels))
     unique_colors  = {lab: col for lab, col in zip(labels, colors_list)}
+
+    bins = np.linspace(np.nanmin(y_vals), np.nanmax(y_vals), 22)
+
     for lab in unique_labels:
         mask = np.array(labels) == lab
-        ax2.hist(y_vals[mask], bins=20, alpha=0.5,
-                 color=unique_colors[lab], label=lab,
-                 edgecolor='black', linewidth=0.5)
+        med  = np.nanmedian(y_vals[mask])
+        ax2.hist(y_vals[mask], bins=bins, histtype='step',
+                 color=unique_colors[lab], lw=2.5,
+                 label=f'{lab} (N={mask.sum()}, median={med:.2f})')
+        ax2.axvline(med, color=unique_colors[lab], ls=':', lw=1.5)
 
-    ax2.set_xlabel(axis_labels.get(y_param, y_param), fontsize=12)
-    ax2.set_ylabel('N', fontsize=12)
+    ax2.set_xlabel(axis_labels.get(y_param, y_param),
+                   fontsize=13, fontweight='bold')
+    ax2.set_ylabel('Number of Sources', fontsize=13, fontweight='bold')
     ax2.set_title(f'Distribution of {axis_labels.get(y_param, y_param)}',
                   fontsize=12, fontweight='bold')
-    ax2.legend(fontsize=9)
-    ax2.grid(alpha=0.3, axis='y')
-
+    ax2.legend(fontsize=8, framealpha=0.95)
+    ax2.grid(alpha=0.3, linestyle='--', axis='y')
+    ax2.tick_params(direction='in', top=True, right=True, labelsize=10)
+ 
     plt.tight_layout()
-
+ 
     if save_dir is not None:
         outdir = Path(save_dir)
         outdir.mkdir(parents=True, exist_ok=True)
         outpath = outdir / f"population_{x_param}_vs_{y_param}.pdf"
         fig.savefig(outpath, dpi=300, bbox_inches='tight')
         print(f"Saved: {outpath}")
-
+ 
     plt.show()
     return fig
 
