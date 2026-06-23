@@ -559,24 +559,24 @@ def get_redshift_peaks(pz_total, z_grid, min_height=0.05):
 
 
 def get_mjd(sdss_id, cache):
-        """
+    """
     Find the MJD for a source from the local cache filenames.
 
     Parameters
     ----------
-    sdss_id : str - SDSS_ID of the source
+    sdss_id : str
     cache   : NAKBlaZarCache instance
 
     Returns
     -------
-    mjd : int or None if not found
+    mjd : int or None
     """
-    files = cache.list_cached_objects()
+    files   = cache.list_cached_objects()
     matches = [f for f in files if f'obj_{sdss_id}_' in f]
     if matches:
         return int(matches[0].replace('.pkl.gz', '').split('_')[2])
     print(f"  No cache file found for SDSS_ID={sdss_id}")
-    return None 
+    return None
 
 # -- Main plot function ----------------------------------------------------------
 
