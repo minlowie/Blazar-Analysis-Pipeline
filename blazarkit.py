@@ -561,7 +561,7 @@ def get_redshift_peaks(pz_total, z_grid, min_height=0.05):
 # -- Main plot function ----------------------------------------------------------
 
 def bz_inspect(results, model, save_dir=None,
-                    show_fig1=False,
+                    posterior=False,
                     show_fig2=True,
                     show_inset=True,
                     show_residuals=True,
@@ -595,11 +595,11 @@ def bz_inspect(results, model, save_dir=None,
 
     Examples
     --------
-    fig1, fig2 = bz_inspect(results)
-    fig1, fig2 = bz_inspect(results, show_fig1=True)
-    fig1, fig2 = bz_inspect(results, model='all')
-    fig1, fig2 = bz_inspect(results, wavelength_range=(4000, 7000))
-    fig1, fig2 = bz_inspect(results, ylim=(-2, 30))
+    spec = bz_inspect(results)
+    spec = bz_inspect(results, posterior=True)
+    spec = bz_inspect(results, model='all')
+    spec = bz_inspect(results, wavelength_range=(4000, 7000))
+    spec = bz_inspect(results, ylim=(-2, 30))
     """
     meta   = results['metadata']
     spec   = results['spectrum']
@@ -743,7 +743,7 @@ def bz_inspect(results, model, save_dir=None,
     ax_chi.legend(ncol=3, fontsize=6)
 
     plt.tight_layout()
-    if show_fig1:
+    if posterior:
         plt.show()
     else:
         plt.close(fig)
@@ -1003,7 +1003,10 @@ def bz_inspect(results, model, save_dir=None,
     print(f"  Best model: {best_label} "
           f"(chi2={best_params['chisqr']:.2f})")
 
-    return fig, fig2
+    if posterior:
+        return fig, fig2
+    else:
+        return fig2
 
 
 # -- Multi-object comparison plot ----------------------------------------------
