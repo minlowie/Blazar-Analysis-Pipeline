@@ -123,6 +123,7 @@ pip install numpy matplotlib astropy scipy
 blazarkit works with pre-computed spectral fitting results stored as compressed cache files. Files stream automatically on first use and are saved locally for all future calls — no account or authentication required.
 
 ```python
+from blazarkit import NAKBlaZarCache
 cache   = NAKBlaZarCache()
 results = cache.load('20570296', mjd=60027)
 # First call: streams from Dropbox and saves to blazar_cache/
@@ -152,7 +153,7 @@ cache = NAKBlaZarCache()
 results = cache.load('20570296', mjd=60027)
 
 # Step 4 — Plot the spectral decomposition
-fig1, fig2 = bz_inspect(results, model='best')
+fig1 = bz_inspect(results, model='best')
 ```
 
 ---
@@ -174,31 +175,31 @@ cache   = NAKBlaZarCache()
 results = cache.load('20570296', mjd=60027)
 
 # Best model only
-fig1, fig2 = bz_inspect(results, model='best')
+fig1 = bz_inspect(results, model='best')
 
 # All model fits overlaid
-fig1, fig2 = bz_inspect(results, model='all')
+fig1 = bz_inspect(results, model='all')
 
 # Specific models
-fig1, fig2 = bz_inspect(results, model=['best', 'Powerlaw+QSO'])
+fig1 = bz_inspect(results, model=['best', 'Powerlaw+QSO'])
 
 # Also show chi2/p(z) figure
-fig1, fig2 = bz_inspect(results, model='best', show_fig1=True)
+fig1, fig2 = bz_inspect(results, model='best', posterior=True)
 
 # Minimal clean plot
-fig1, fig2 = bz_inspect(results, model='best',
-                         show_inset=False,
-                         show_line_markers=False,
-                         show_residuals=False)
+fig1 = bz_inspect(results, model='best',
+                  show_inset=False,
+                  show_line_markers=False,
+                  show_residuals=False)
 
 # Zoom into a wavelength range
-fig1, fig2 = bz_inspect(results, model='best', wavelength_range=(4000, 7000))
+fig1 = bz_inspect(results, model='best', wavelength_range=(4000, 7000))
 
 # Override y-axis limits
-fig1, fig2 = bz_inspect(results, model='best', ylim=(-2, 30))
+fig1 = bz_inspect(results, model='best', ylim=(-2, 30))
 
 # Save to PDF
-fig1, fig2 = bz_inspect(results, model='best', save_dir='my_plots')
+fig1 = bz_inspect(results, model='best', save_dir='my_plots')
 ```
 
 ---
