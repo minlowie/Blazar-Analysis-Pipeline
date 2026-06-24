@@ -2,7 +2,7 @@
 
 **blazarkit** is a Python package for visualising and analysing pre-computed spectral fitting results from the Fermi/SDSS-V Blazar Analysis Pipeline.
 
-> **Nlowie et al. (in prep.)** — *Optical Spectroscopic Analysis of Fermi Detected Blazars using SDSS-V*
+> **Nlowie et al. (Submitted to MNRAS)** — *Optical Spectroscopic Analysis of Fermi Detected Blazars using SDSS-V*
 
 ---
 
@@ -41,10 +41,14 @@ For full details of the method, see **Nlowie et al. (in prep.)**.
 ---
 
 ## The Value-Added Catalogue (VAC)
-The pipeline was applied to 707 Fermi-LAT blazar candidates cross-matched with SDSS-V DR20. The results are published as a Value-Added Catalogue (VAC) through the SDSS Science Archive Server (SAS):
+The pipeline was applied to 746 Fermi-LAT blazar candidates cross-matched with SDSS-V DR20. After excluding 39 sources with catastrophic fit failures or non-blazar Fermi classifications, 707 sources constitute the final sample published as a Value-Added Catalogue (VAC 0034) through the SDSS Science 
+Archive Server (SAS):
 
-> **SDSS-V DR20 VAC: to be added upon publication**
-> https://data.sdss.org/sas/dr20/
+> [Click to see SDSS-V VAC 0034 description ](https://sas.sdss.org/dsi/file/select-fermi_blazar_redshifts/vac-34/env-BHM_BLAZAR)
+
+> [SDSS-V VAC 0034 can be downloaded at](https://data.sdss5.org/sas/dr20/vac/bhm/blazar/boss_fermi_redshifts/)
+
+
 
 The VAC contains one row per source with columns including:
 
@@ -61,8 +65,9 @@ The VAC contains one row per source with columns including:
 | `PL_alpha` | Power-law continuum slope |
 | `PL_delta` | Power-law curvature |
 | `SNR` | Spectral signal-to-noise ratio |
+| `Z_FLAG` | Reliability flag: 0=reliable, 1=featureless PL, 2=low-confidence z, 3=low S/N|
 
-The VAC alone allows straightforward population-level analysis — redshift distributions, jet fraction comparisons, power-law slope statistics — without needing to load individual spectra. See the **demo notebook** for worked examples.
+The VAC 0034 alone allows straightforward population-level analysis — redshift distributions, jet fraction comparisons, power-law slope statistics — without needing to load individual spectra. See the **demo notebook** for worked examples.
 
 ---
 
@@ -388,7 +393,7 @@ cache = NAKBlaZarCache(cache_dir=r'C:\Users\name\Downloads\blazar_cache')
 If you use any results from this work, please cite:
 
 ```
-Nlowie et al. (in prep.) — Optical Spectroscopic Analysis of Fermi Detected
+Nlowie et al. (Submitted) — Optical Spectroscopic Analysis of Fermi Detected
 Blazars using SDSS-V. MNRAS.
 ```
 
@@ -397,7 +402,7 @@ If you use blazarkit, please also cite:
 
 ```
 Nlowie et al. (2026) — blazarkit: Plotting and analysis utilities for
-Fermi/SDSS-V blazar spectral fitting. Zenodo. doi:10.5281/zenodo.XXXXXXX
+Fermi/SDSS-V blazar spectral fitting. Zenodo. doi:..../zenodo.XXXXXXX
 ```
 
 > blazarkit is a visualisation and analysis tool for pre-computed results.
@@ -410,7 +415,7 @@ If you use the pre-computed cache files, please also cite:
 **Main sample (707 sources):**
 ```
 Nlowie et al. (2026) — Fermi/SDSS-V Blazar Spectral Fitting Results:
-Main Sample. Zenodo. doi:10.5281/zenodo.YYYYYYY 
+Main Sample. Zenodo. doi:...../zenodo.YYYYYYY 
 
 SDSS-V Collaboration et al. 2026
 ```
