@@ -21,7 +21,7 @@ setup(
         'matplotlib>=3.7',
         'astropy>=5.3',
         'scipy>=1.11',
-        'pandas>=1.5,
+        'pandas>=1.5',
     ],
     classifiers = [
         'Programming Language :: Python :: 3',
