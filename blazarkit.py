@@ -1111,7 +1111,7 @@ def bz_compare(object_list, cache, final_bl,
         fhl_z      = float(row_match['Z_SDSS'][0])     if len(row_match) > 0 else np.nan
  
         z_best     = lmfit_res['z_best'] 
-        z_sdss     = meta['Z_SDSS']
+        z_sdss     = meta['z_sdss']
         best_label = lmfit_res['best_label']
         obj_class  = meta['obj_class']
         best_params= lmfit_res['best_fit_params']
