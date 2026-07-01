@@ -1036,7 +1036,7 @@ def bz_inspect(results, model, save_dir=None,
 # -- Multi-object comparison plot ----------------------------------------------
 
 def bz_compare(object_list, cache, final_bl,
-                                        n_cols=2, save_dir="paper_plots"):
+                                        n_cols=2, save_dir="paper_plots",pdfname="multi_object_comparison.pdf",show=True):
     """
     Create a multi-panel comparison plot for a list of sources.
  
@@ -1047,6 +1047,7 @@ def bz_compare(object_list, cache, final_bl,
     final_bl    : astropy Table - the main blazar sample table
     n_cols      : int - number of columns in the grid
     save_dir    : str - directory to save the output PDF
+    pdfname     : str - name of output PDF file (default="multi_object_comparison.pdf")
     """
     import string
     n_objects   = len(object_list)
@@ -1076,7 +1077,7 @@ def bz_compare(object_list, cache, final_bl,
         top_of_obj   = 1.0 - top_margin - row_idx * (total_row_height + row_spacing)
         spec_bottom  = top_of_obj - spec_height
         resid_bottom = spec_bottom - spec_resid_gap - resid_height
- 
+        
         ax_spec  = fig.add_axes([left, spec_bottom,  panel_width, spec_height])
         ax_resid = fig.add_axes([left, resid_bottom, panel_width, resid_height],
                                 sharex=ax_spec)
@@ -1344,10 +1345,11 @@ def bz_compare(object_list, cache, final_bl,
         print(f"  [{idx+1}] {best_label}, z={z_best:.3f}")
  
     os.makedirs(save_dir, exist_ok=True)
-    outpath = os.path.join(save_dir, "multi_object_comparison.pdf")
+    outpath = os.path.join(save_dir, pdfname)
     fig.savefig(outpath, dpi=300, bbox_inches='tight')
     print(f"\nSaved: {outpath}")
-    plt.show()
+    if show:
+        plt.show()
     return fig
  
 
