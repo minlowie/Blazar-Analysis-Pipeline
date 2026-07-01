@@ -1109,7 +1109,7 @@ def bz_compare(object_list, cache, final_bl,
         lm_rchi    = float(row_match['rchi2_fit'][0])  if len(row_match) > 0 else np.nan
         fhl_z      = float(row_match['Z_SDSS'][0])     if len(row_match) > 0 else np.nan
  
-        z_best     = lmfit_res['z_best']
+        z_best     = lmfit_res['z_best'] 
         z_sdss     = meta['Z_SDSS']
         best_label = lmfit_res['best_label']
         obj_class  = meta['obj_class']
@@ -1305,7 +1305,7 @@ def bz_compare(object_list, cache, final_bl,
  
         ax_spec.set_title(
             f"({panel_labels[idx]}) {sdss_name} | 4FGL: {fhl_class} | "
-            f"SDSS: {obj_class} (z={z_sdss_str}) | fhl_z={fhl_z:.3f}\n"
+            f"SDSS: {obj_class} (z={z_sdss_str}) \n"
             f"Best: {best_label} | z_fit={z_best:.3f}{z_err_str} | "
             f"χ²_r SDSS={RCHI:.2f} lmfit={lm_rchi:.2f} | S/N={sn:.1f}",
             fontsize=11, fontweight='bold', pad=2)
