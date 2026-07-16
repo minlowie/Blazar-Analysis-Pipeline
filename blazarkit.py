@@ -410,6 +410,319 @@ def measure_ew(wave, flux, err, fit_mask, z):
     return results_ew
 
 
+
+# ── Gaussian line fitting ──────────────────────────────────────────────────────
+
+# FWHM thresholds for broad/narrow classification
+# Following Shen et al. (2011) and Padovani et al. (2019)
+BROAD_FWHM_KMS    = 1200.0   # km/s — above this = broad line (BLR, FSRQ signature)
+NARROW_FWHM_KMS   = 500.0    # km/s — below this = narrow line (NLR)
+C_KMS             = 2.998e5  # speed of light in km/s
+
+# Lines where a double Gaussian (broad + narrow) decomposition is attempted
+BROAD_LINE_NAMES = {'Mg II', 'C IV', 'C III', 'H_alpha', 'H_beta', 'Ly_alpha'}
+
+
+def fit_line_gaussian(wave, flux, err, fit_mask, line_center,
+                      line_type='emission', snr_threshold=3.0,
+                      cont_window=150.0, try_double=True):
+    """
+    Fit a Gaussian (or double Gaussian) profile to a spectral line after
+    local continuum subtraction.  Works for both emission and absorption lines.
+
+    Uses the same adaptive continuum estimation as
+    measure_equivalent_width_hybrid_normalized, then fits with lmfit.
+    Model selection between single and double Gaussian uses AICc, consistent
+    with the main pipeline philosophy.
+
+    Parameters
+    ----------
+    wave         : array  — observed wavelength grid (Angstrom)
+    flux         : array  — flux array
+    err          : array  — flux error array
+    fit_mask     : array  — boolean mask of valid pixels
+    line_center  : float  — observed-frame line centre (Angstrom)
+    line_type    : str    — 'emission' or 'absorption'
+    snr_threshold: float  — minimum S/N for detection (default 3.0)
+    cont_window  : float  — half-width of continuum estimation window (Angstrom)
+    try_double   : bool   — attempt double Gaussian for broad lines
+
+    Returns
+    -------
+    result : dict with keys:
+        ew_gauss      — EW from Gaussian integration (Angstrom)
+        ew_gauss_err  — uncertainty on EW
+        line_flux     — integrated line flux (erg/s/cm²/Angstrom units of input)
+        line_flux_err — uncertainty on line flux
+        fwhm_kms      — FWHM of primary component in km/s
+        fwhm_kms_err  — uncertainty on FWHM
+        line_type_fit — 'broad', 'narrow', or 'intermediate'
+        amplitude     — Gaussian peak amplitude above continuum
+        centre        — fitted line centre (Angstrom)
+        sigma_ang     — Gaussian sigma in Angstrom
+        n_components  — 1 or 2
+        broad_fwhm_kms  — broad component FWHM (km/s) if n_components=2
+        narrow_fwhm_kms — narrow component FWHM (km/s) if n_components=2
+        redchi        — reduced chi-squared of fit
+        detected      — bool
+        continuum     — local continuum level used
+        success       — bool — fit converged
+    """
+    from lmfit import Parameters, minimize
+
+    _nan = dict(
+        ew_gauss=np.nan, ew_gauss_err=np.nan,
+        line_flux=np.nan, line_flux_err=np.nan,
+        fwhm_kms=np.nan, fwhm_kms_err=np.nan,
+        line_type_fit='unknown', amplitude=np.nan,
+        centre=line_center, sigma_ang=np.nan,
+        n_components=0, broad_fwhm_kms=np.nan,
+        narrow_fwhm_kms=np.nan, redchi=np.nan,
+        detected=False, continuum=np.nan, success=False
+    )
+
+    # ── 1. Continuum estimation ───────────────────────────────────────────────
+    good = fit_mask & np.isfinite(flux) & np.isfinite(err) & (err > 0)
+
+    cont_left  = good & (wave > line_center - cont_window - 50) &                         (wave < line_center - 50)
+    cont_right = good & (wave > line_center + 50) &                         (wave < line_center + cont_window + 50)
+    cont_region = cont_left | cont_right
+
+    if np.sum(cont_region) < 8:
+        return _nan
+
+    cont_wave = wave[cont_region]
+    cont_flux = flux[cont_region]
+    cont_err  = err[cont_region]
+
+    try:
+        weights         = 1.0 / np.maximum(cont_err, 1e-30)**2
+        coeffs          = np.polyfit(cont_wave, cont_flux, deg=1, w=weights)
+        continuum_model = np.poly1d(coeffs)
+    except Exception:
+        continuum_level_val = float(np.nanmedian(cont_flux))
+        continuum_model     = lambda w: continuum_level_val
+
+    # ── 2. Isolate line region ────────────────────────────────────────────────
+    # Use a generous window for the fit (will be refined by Gaussian sigma)
+    line_hw   = 100.0  # Angstrom half-width for fitting region
+    line_mask = good & (wave > line_center - line_hw) &                        (wave < line_center + line_hw)
+
+    if np.sum(line_mask) < 5:
+        return _nan
+
+    w_line  = wave[line_mask]
+    f_line  = flux[line_mask] - continuum_model(w_line)  # continuum-subtracted
+    e_line  = err[line_mask]
+    cont_at_line = float(np.nanmedian(continuum_model(w_line)))
+
+    if cont_at_line <= 0:
+        return _nan
+
+    # Sign convention: emission = positive residual, absorption = negative
+    sign = 1.0 if line_type == 'emission' else -1.0
+
+    # Initial amplitude estimate
+    amp_init = float(np.nanmax(sign * f_line))
+    if amp_init <= 0:
+        amp_init = float(np.nanstd(f_line))
+
+    # ── 3. Single Gaussian fit ────────────────────────────────────────────────
+    def gaussian(x, amp, cen, sigma):
+        return amp * np.exp(-0.5 * ((x - cen) / sigma)**2)
+
+    def residual_single(params, x, data, err):
+        amp   = params['amp'].value
+        cen   = params['cen'].value
+        sigma = params['sigma'].value
+        model = gaussian(x, amp, cen, sigma)
+        return (data - model) / err
+
+    p1 = Parameters()
+    p1.add('amp',   value=amp_init,    min=0.0 if line_type=='emission' else -np.inf,
+                    max=np.inf if line_type=='emission' else 0.0)
+    p1.add('cen',   value=line_center, min=line_center - 30, max=line_center + 30)
+    p1.add('sigma', value=10.0,        min=1.0, max=150.0)
+
+    try:
+        r1 = minimize(residual_single, p1, args=(w_line, f_line, e_line),
+                      method='leastsq')
+    except Exception:
+        return _nan
+
+    if not r1.success and not r1.errorbars:
+        return _nan
+
+    # ── 4. Optionally try double Gaussian ────────────────────────────────────
+    best_result   = r1
+    n_components  = 1
+    broad_fwhm_kms  = np.nan
+    narrow_fwhm_kms = np.nan
+
+    if try_double and np.sum(line_mask) >= 12:
+        def residual_double(params, x, data, err):
+            amp1, cen1, sig1 = (params['amp1'].value,
+                                params['cen1'].value, params['sig1'].value)
+            amp2, cen2, sig2 = (params['amp2'].value,
+                                params['cen2'].value, params['sig2'].value)
+            model = (gaussian(x, amp1, cen1, sig1) +
+                     gaussian(x, amp2, cen2, sig2))
+            return (data - model) / err
+
+        p2 = Parameters()
+        # Broad component
+        p2.add('amp1',  value=amp_init * 0.7, min=0.0 if line_type=='emission' else -np.inf)
+        p2.add('cen1',  value=line_center,    min=line_center - 30, max=line_center + 30)
+        p2.add('sig1',  value=30.0,           min=10.0, max=150.0)   # broad
+        # Narrow component
+        p2.add('amp2',  value=amp_init * 0.3, min=0.0 if line_type=='emission' else -np.inf)
+        p2.add('cen2',  value=line_center,    min=line_center - 15, max=line_center + 15)
+        p2.add('sig2',  value=4.0,            min=1.0, max=15.0)     # narrow
+
+        try:
+            r2 = minimize(residual_double, p2, args=(w_line, f_line, e_line),
+                          method='leastsq')
+        except Exception:
+            r2 = None
+
+        if r2 is not None and r2.success:
+            # AICc comparison — same philosophy as main pipeline
+            def aicc(result, n_data):
+                k   = len([p for p in result.params if result.params[p].vary])
+                chi = float(result.chisqr)
+                aic = chi + 2 * k
+                return aic + (2 * k * (k + 1)) / max(1, n_data - k - 1)
+
+            n_data = len(w_line)
+            if aicc(r2, n_data) < aicc(r1, n_data) - 2.0:
+                best_result  = r2
+                n_components = 2
+                sig1 = abs(best_result.params['sig1'].value)
+                sig2 = abs(best_result.params['sig2'].value)
+                broad_fwhm_kms  = (2.355 * max(sig1, sig2) / line_center) * C_KMS
+                narrow_fwhm_kms = (2.355 * min(sig1, sig2) / line_center) * C_KMS
+
+    # ── 5. Extract physical parameters ───────────────────────────────────────
+    if n_components == 1:
+        amp   = best_result.params['amp'].value
+        cen   = best_result.params['cen'].value
+        sigma = abs(best_result.params['sigma'].value)
+        # Uncertainties
+        amp_err   = best_result.params['amp'].stderr   or np.nan
+        sigma_err = best_result.params['sigma'].stderr or np.nan
+    else:
+        # Use the broad component as primary for FWHM reporting
+        s1 = abs(best_result.params['sig1'].value)
+        s2 = abs(best_result.params['sig2'].value)
+        if s1 >= s2:
+            amp, cen, sigma = (best_result.params['amp1'].value,
+                               best_result.params['cen1'].value, s1)
+            amp_err   = best_result.params['amp1'].stderr   or np.nan
+            sigma_err = best_result.params['sig1'].stderr   or np.nan
+        else:
+            amp, cen, sigma = (best_result.params['amp2'].value,
+                               best_result.params['cen2'].value, s2)
+            amp_err   = best_result.params['amp2'].stderr   or np.nan
+            sigma_err = best_result.params['sig2'].stderr   or np.nan
+
+    # FWHM in km/s
+    fwhm_ang     = 2.355 * sigma
+    fwhm_kms     = (fwhm_ang / line_center) * C_KMS
+    fwhm_kms_err = (2.355 * sigma_err / line_center) * C_KMS                    if np.isfinite(sigma_err) else np.nan
+
+    # Line flux = amplitude × sigma × sqrt(2π)
+    line_flux     = abs(amp) * sigma * np.sqrt(2 * np.pi)
+    line_flux_err = line_flux * np.sqrt(
+        (amp_err / amp)**2 + (sigma_err / sigma)**2
+    ) if (np.isfinite(amp_err) and np.isfinite(sigma_err) and
+          amp != 0 and sigma != 0) else np.nan
+
+    # EW from Gaussian
+    ew_gauss     = sign * line_flux / cont_at_line
+    ew_gauss_err = (line_flux_err / cont_at_line) if np.isfinite(line_flux_err) else np.nan
+
+    # S/N of detection
+    snr_gauss = abs(ew_gauss) / ew_gauss_err if (np.isfinite(ew_gauss_err)
+                                                   and ew_gauss_err > 0) else 0.0
+
+    # Broad/narrow classification
+    if fwhm_kms > BROAD_FWHM_KMS:
+        line_type_fit = 'broad'
+    elif fwhm_kms < NARROW_FWHM_KMS:
+        line_type_fit = 'narrow'
+    else:
+        line_type_fit = 'intermediate'
+
+    detected = (snr_gauss >= snr_threshold and
+                best_result.success and
+                np.isfinite(ew_gauss) and
+                abs(ew_gauss) > 0)
+
+    return dict(
+        ew_gauss        = float(ew_gauss),
+        ew_gauss_err    = float(ew_gauss_err),
+        line_flux       = float(line_flux),
+        line_flux_err   = float(line_flux_err),
+        fwhm_kms        = float(fwhm_kms),
+        fwhm_kms_err    = float(fwhm_kms_err),
+        line_type_fit   = line_type_fit,
+        amplitude       = float(amp),
+        centre          = float(cen),
+        sigma_ang       = float(sigma),
+        n_components    = n_components,
+        broad_fwhm_kms  = float(broad_fwhm_kms)  if np.isfinite(broad_fwhm_kms)  else np.nan,
+        narrow_fwhm_kms = float(narrow_fwhm_kms) if np.isfinite(narrow_fwhm_kms) else np.nan,
+        redchi          = float(best_result.redchi) if hasattr(best_result, 'redchi') else np.nan,
+        detected        = bool(detected),
+        continuum       = float(cont_at_line),
+        success         = bool(best_result.success),
+    )
+
+
+def fit_all_lines_gaussian(wave, flux, err, fit_mask, z,
+                            snr_threshold=3.0):
+    """
+    Run fit_line_gaussian for all emission and absorption lines at redshift z.
+
+    Parameters
+    ----------
+    wave, flux, err : arrays — observed-frame spectrum
+    fit_mask        : boolean array — valid pixels
+    z               : float — redshift
+    snr_threshold   : float — minimum S/N for detection
+
+    Returns
+    -------
+    results : dict — keyed by line name, values are fit_line_gaussian output dicts
+    """
+    results = {}
+    all_lines = ([(name, rest, 'emission')
+                  for name, rest in EMISSION_LINES.items()] +
+                 [(name, rest, 'absorption')
+                  for name, rest in ABSORPTION_LINES.items()])
+
+    for name, rest, ltype in all_lines:
+        obs_wave = rest * (1 + z)
+        if obs_wave < wave.min() + 150 or obs_wave > wave.max() - 150:
+            results[name] = {'detected': False, 'line_type': ltype,
+                             'obs_wave': obs_wave}
+            continue
+
+        try_double = name in BROAD_LINE_NAMES and ltype == 'emission'
+        gauss = fit_line_gaussian(
+            wave, flux, err, fit_mask, obs_wave,
+            line_type      = ltype,
+            snr_threshold  = snr_threshold,
+            try_double     = try_double,
+        )
+        gauss['line_type'] = ltype
+        gauss['obs_wave']  = obs_wave
+        gauss['rest_wave'] = rest
+        results[name] = gauss
+
+    return results
+
+
 # -- Zoom inset ----------------------------------------------------------------
 
 def make_zoom_inset(ax, spec, fit_data, best_label, comp,
