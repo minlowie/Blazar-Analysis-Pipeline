@@ -99,7 +99,7 @@ A typical workflow starts with the VAC to identify sources of interest, then use
 ## Installation
 
 ### Requirements
-- Python 3.7 or higher
+- Python 3.10 or higher
 - Works on Mac, Windows, and Linux
 
 ### Install blazarkit
@@ -111,7 +111,7 @@ pip install git+https://github.com/minlowie/Blazar-Analysis-Pipeline.git
 ### Install dependencies manually (if needed)
 
 ```bash
-pip install numpy matplotlib astropy scipy
+pip install "numpy>=2.0" "astropy>=6.1" matplotlib scipy
 ```
 
 ---
