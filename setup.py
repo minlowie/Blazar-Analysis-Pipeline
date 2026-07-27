@@ -14,7 +14,8 @@ setup(
     url              = 'https://github.com/minlowie/Blazar-Analysis-Pipeline',
     py_modules       = ['blazarkit', 'blazarkit_ml'],
     package_data     = {'': ['dropbox_links.json']},
-    data_files       = [('', ['dropbox_links.json'])],
+    data_files            = [('', ['dropbox_links.json'])],
+    include_package_data  = True,
     python_requires  = '>=3.10', 
     install_requires = [
         'numpy>=2.0',
