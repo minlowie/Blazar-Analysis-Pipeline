@@ -16,7 +16,6 @@ setup(
     packages         = find_packages(where="src"),
     py_modules       = ['blazarkit'],
     package_data     = {'blazarkit': ['dropbox_links.json']},
-    data_files            = [('', ['dropbox_links.json'])],
     include_package_data  = True,
     python_requires  = '>=3.10', 
     install_requires = [
