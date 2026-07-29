@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 
 with open('README.md', 'r', encoding='utf-8') as f:
     long_description = f.read()
@@ -12,9 +12,10 @@ setup(
     author           = 'Mohammed Iddrisu Nlowie',
     author_email     = '',
     url              = 'https://github.com/minlowie/Blazar-Analysis-Pipeline',
-    py_modules       = ['blazarkit', 'blazarkit_ml'],
-    package_data     = {'': ['dropbox_links.json']},
-    data_files            = [('', ['dropbox_links.json'])],
+    package_dir      = {"": "src"},
+    packages         = find_packages(where="src"),
+    py_modules       = ['blazarkit'],
+    package_data     = {'blazarkit': ['dropbox_links.json']},
     include_package_data  = True,
     python_requires  = '>=3.10', 
     install_requires = [
