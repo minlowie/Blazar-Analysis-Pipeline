@@ -1344,7 +1344,7 @@ def bz_inspect(results, model, save_dir=None,
     if posterior:
         return fig, fig2
     else:
-        return fig2
+        return None
 
 
 # -- Multi-object comparison plot ----------------------------------------------
