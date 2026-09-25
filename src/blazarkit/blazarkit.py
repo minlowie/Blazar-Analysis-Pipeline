@@ -1325,6 +1325,7 @@ def bz_inspect(results, model, save_dir=None,
 
     plt.tight_layout()
     plt.show()
+    plt.close(fig2)
 
     # Save
     if save_dir is not None:
